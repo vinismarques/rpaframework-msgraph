@@ -1,0 +1,50 @@
+[tool.poetry]
+name = "rpaframework-msgraph"
+version = "0.1.0"
+description = "A standalone library wrapping the Microsoft Graph API."
+authors = ["RPA Framework <rpafw@robocorp.com>"]
+license = "Apache-2.0"
+readme = "README.rst"
+
+repository = "https://github.com/blakewaud/rpaframework-msgraph"
+
+keywords = ["robotframework", "rpa", "automation"]
+classifiers = [
+    "License :: OSI Approved :: Apache Software License",
+    "Development Status :: 3 - Alpha",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Software Development :: Libraries",
+    "Framework :: Robot Framework :: Library",
+    "Framework :: Robot Framework",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+rpaframework-core = "^9.0.0"
+robotframework = ">=4.0.0,!=4.0.1,<6.0.0"
+robotframework-pythonlibcore = "^3.0.0"
+microsoftgraph-python = "^1.1.4"
+
+[tool.poetry.dev-dependencies]
+black = "^22.3.0"
+flake8 = "^3.7.9"
+pylint = "^2.4.4, <2.13"
+pytest = "^6.2.5"
+pytest-cov = "^2.10.1"
+mock = "^4.0.2"
+mypy = "^0.910"
+python-docx = "^0.8.11"
+pytest-env = "^0.6.2"
+setuptools = "^51.1.2"
+invoke = "^1.6.0"
+sphinx = "^2.3.1"
+sphinx_rtd_theme = "^0.4.3"
+toml = "^0.10.1"
+sphinx-markdown-builder = "^0.5.4"
+robotframework-docgen = "^0.15.0"
+sphinx-issues = "^1.2.0"
