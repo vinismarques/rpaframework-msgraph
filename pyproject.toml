@@ -23,6 +23,11 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
 ]
 
+packages = [
+    { include = "RPA", from = "src" },
+    { include = "tests", format = "sdist" },
+]
+
 [tool.poetry.dependencies]
 python = "^3.9"
 rpaframework-core = "^9.0.0"
@@ -36,6 +41,7 @@ flake8 = "^3.7.9"
 pylint = "^2.4.4, <2.13"
 pytest = "^6.2.5"
 pytest-cov = "^2.10.1"
+pytest-mock = "^3.8.2"
 mock = "^4.0.2"
 mypy = "^0.910"
 python-docx = "^0.8.11"
@@ -48,3 +54,7 @@ toml = "^0.10.1"
 sphinx-markdown-builder = "^0.5.4"
 robotframework-docgen = "^0.15.0"
 sphinx-issues = "^1.2.0"
+
+[tool.pytest.ini_options]
+addopts = "-v --cov=src --cov-branch"
+testpaths = ["tests/python"]
