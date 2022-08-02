@@ -34,7 +34,7 @@ def init_auth(library: MSGraph, mocker: MockerFixture) -> str:
     return library.generate_oauth_authorize_url(MOCK_CLIENT_ID, MOCK_CLIENT_SECRET)
 
 
-def _mock_token_response(
+def _patch_token_response(
     mocker: MockerFixture, iteration: int
 ) -> MockerFixture._Patcher:
     mock_token_response = MagicMock()
@@ -76,7 +76,7 @@ def test_generating_auth_url(init_auth: str) -> None:
 
 
 def test_auth_cycle(library: MSGraph, mocker: MockerFixture, init_auth: str) -> None:
-    _mock_token_response(mocker, 1)
+    _patch_token_response(mocker, 1)
 
     refresh_token = library.authorize_and_get_token(MOCK_AUTH_CODE)
 
@@ -85,7 +85,7 @@ def test_auth_cycle(library: MSGraph, mocker: MockerFixture, init_auth: str) -> 
 
 
 def test_refreshing_token(configured_library: MSGraph, mocker: MockerFixture) -> None:
-    _mock_token_response(mocker, 2)
+    _patch_token_response(mocker, 2)
 
     refresh_token = configured_library.refresh_oauth_token(MOCK_REFRESH_TOKEN.format(1))
 
