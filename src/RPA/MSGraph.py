@@ -1,8 +1,8 @@
 from enum import Enum
 import logging
 import secrets
-from typing import Optional
-from microsoftgraph.client import Client
+from typing import Optional, Union
+from microsoftgraph.client import Client, Users
 from robot.api.deco import keyword
 
 DEFAULT_REDIRECT_URI = "https://login.microsoftonline.com/common/oauth2/nativeclient"
@@ -113,16 +113,17 @@ class MSGraph:
         client_secret: str,
         refresh_token: Optional[str] = None,
         redirect_uri: str = DEFAULT_REDIRECT_URI,
-    ) -> None:
+    ) -> Union[str, None]:
         """Configures the MS Graph client when authorization has
         already been completed previously. If a refresh token is
         known, it can be provided to obtain a current user token
-        to authenticate with.
+        to authenticate with. A new refresh token is returned
+        if one is provided.
         """
         self.client = Client(client_id, client_secret)
         self.redirect_uri = redirect_uri
         if refresh_token:
-            self.user_token = self.refresh_oauth_token(refresh_token)
+            return self.refresh_oauth_token(refresh_token)
 
     @keyword
     def authorize_and_get_token(self, authorization_code: str) -> str:
@@ -142,14 +143,52 @@ class MSGraph:
         self.user_token = self.client.exchange_code(
             self.redirect_uri, authorization_code
         )
+        self.set_access_token(self.user_token.data)
         return self.user_token.data["refresh_token"]
 
     @keyword
     def refresh_oauth_token(self, refresh_token: str) -> str:
         """Refreshes the user token using the provided ``refresh_token``.
         The user token is retained in the library and a new
-        refresh_token is returned.
+        refresh token is returned.
         """
         self._require_client()
         self.user_token = self.client.refresh_token(self.redirect_uri, refresh_token)
+        self.set_access_token(self.user_token.data)
         return self.user_token.data["refresh_token"]
+
+    @keyword
+    def set_access_token(self, access_token: dict) -> None:
+        """This keyword should not normally need to be called as the
+        token is set by other keywords when a user token response is
+        received, but can be used to set the access token directly.
+        """
+        self._require_client()
+        self.client.set_token(access_token)
+
+    @keyword
+    def get_me(self, properties: Union[str, list[str]] = None) -> dict:
+        """Returns the MS Graph object representing the currently logged
+        in user. You can supply a list of additional properties to
+        return as a comma-separated list or a list object.
+
+        To understand the list of available properties, refer to the
+        `Get User MS Graph API documentation`_.
+
+        .. _Get User MS Graph API documentation: https://docs.microsoft.com/en-us/graph/api/user-get?view=graph-rest-1.0&tabs=http
+
+        :param properties: A string with properties separated
+                           by commas or a list object with properties.
+
+        """
+        self._require_client()
+        self._require_user_token()
+        if properties:
+            try:
+                parsed_properties = properties.split(",")
+            except AttributeError:
+                parsed_properties = properties
+            parsed_properties = [p.strip() for p in parsed_properties]
+            return self.client.users.get_me(f"$select={','.join(parsed_properties)}")
+        else:
+            return self.client.users.get_me()

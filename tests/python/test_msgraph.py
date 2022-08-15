@@ -1,3 +1,4 @@
+from typing import Union
 from urllib.parse import urlencode
 from mock import MagicMock
 import pytest
@@ -22,7 +23,7 @@ def library() -> MSGraph:
 
 
 @pytest.fixture
-def configured_library(library: MSGraph) -> MSGraph:
+def configured_lib(library: MSGraph) -> MSGraph:
     library.configure_msgraph_client(MOCK_CLIENT_ID, MOCK_CLIENT_SECRET)
     return library
 
@@ -32,6 +33,15 @@ def init_auth(library: MSGraph, mocker: MockerFixture) -> str:
     config = {"token_urlsafe.return_value": DEFAULT_STATE}
     mocker.patch("RPA.MSGraph.secrets", **config)
     return library.generate_oauth_authorize_url(MOCK_CLIENT_ID, MOCK_CLIENT_SECRET)
+
+
+@pytest.fixture
+def authorized_lib(
+    configured_lib: MSGraph, mocker: MockerFixture, init_auth: str
+) -> MSGraph:
+    _patch_token_response(mocker, 1)
+    configured_lib.authorize_and_get_token(MOCK_AUTH_CODE)
+    return configured_lib
 
 
 def _patch_token_response(
@@ -48,6 +58,17 @@ def _patch_token_response(
         "refresh_token": MOCK_REFRESH_TOKEN.format(iteration),
     }
     config = {"post.return_value": mock_token_response}
+    return mocker.patch("microsoftgraph.client.requests", **config)
+
+
+def _patch_graph_response(
+    mocker: MockerFixture, return_value: dict
+) -> MockerFixture._Patcher:
+    mock_graph_response = MagicMock()
+    mock_graph_response.status_code = 200
+    mock_graph_response.headers = {"Content-Type": "application/json"}
+    mock_graph_response.json.return_value = return_value
+    config = {"request.return_value": mock_graph_response}
     return mocker.patch("microsoftgraph.client.requests", **config)
 
 
@@ -84,12 +105,61 @@ def test_auth_cycle(library: MSGraph, mocker: MockerFixture, init_auth: str) -> 
     assert refresh_token == MOCK_REFRESH_TOKEN.format(1)
 
 
-def test_refreshing_token(configured_library: MSGraph, mocker: MockerFixture) -> None:
+def test_refreshing_token(configured_lib: MSGraph, mocker: MockerFixture) -> None:
     _patch_token_response(mocker, 2)
 
-    refresh_token = configured_library.refresh_oauth_token(MOCK_REFRESH_TOKEN.format(1))
+    refresh_token = configured_lib.refresh_oauth_token(MOCK_REFRESH_TOKEN.format(1))
 
-    assert configured_library.user_token.data[
-        "access_token"
-    ] == MOCK_ACCESS_TOKEN.format(2)
+    assert configured_lib.user_token.data["access_token"] == MOCK_ACCESS_TOKEN.format(2)
     assert refresh_token == MOCK_REFRESH_TOKEN.format(2)
+
+
+def test_get_me(authorized_lib: MSGraph, mocker: MockerFixture) -> None:
+    data = {
+        "businessPhones": ["+1 425 555 0109"],
+        "displayName": "Adele Vance",
+        "givenName": "Adele",
+        "jobTitle": "Retail Manager",
+        "mail": "AdeleV@contoso.onmicrosoft.com",
+        "mobilePhone": "+1 425 555 0109",
+        "officeLocation": "18/2111",
+        "preferredLanguage": "en-US",
+        "surname": "Vance",
+        "userPrincipalName": "AdeleV@contoso.onmicrosoft.com",
+        "id": "87d349ed-44d7-43e1-9a83-5f2406dee5bd",
+    }
+    _patch_graph_response(mocker, data)
+
+    response = authorized_lib.get_me()
+
+    assert response.data == data
+
+
+@pytest.mark.parametrize(
+    "properties",
+    [
+        "displayName, givenName,postalCode, identities",
+        ["displayName", "givenName", "postalCode", "identities"],
+    ],
+)
+def test_get_me_with_properties(
+    authorized_lib: MSGraph, mocker: MockerFixture, properties: Union[str, list[str]]
+) -> None:
+    data = {
+        "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#users(displayName,givenName,postalCode,identities)/$entity",
+        "displayName": "Adele Vance",
+        "givenName": "Adele",
+        "postalCode": "98004",
+        "identities": [
+            {
+                "signInType": "userPrincipalName",
+                "issuer": "contoso.com",
+                "issuerAssignedId": "AdeleV@contoso.com",
+            }
+        ],
+    }
+    _patch_graph_response(mocker, data)
+
+    response = authorized_lib.get_me(properties)
+
+    assert response.data == data
