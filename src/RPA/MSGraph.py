@@ -135,6 +135,12 @@ class MSGraph:
         (e.g., the Robocorp Control Room Vault).
         """  # noqa: W605
         self._require_client()
+        # TODO: Need to help robot developer handle receiving authorization
+        #       code redirect URL and parse it into the authorization_code
+        #       and check the ``random_state``. When the user completes the
+        #       web flow, I am not sure where the authorization redirect
+        #       query is currently sent when using the default redirec uri
+        #       for native clients.
         if not self.random_state:
             raise ValueError(
                 "You must first generate an authorize URL and obtain an "
