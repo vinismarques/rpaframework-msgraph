@@ -32,9 +32,93 @@ Learn more about RPA at `Robocorp Documentation`_.
 .. _Control Room: https://robocorp.com/docs/control-room
 .. _Developer Tools: https://robocorp.com/downloads
 .. _Installing Python Packages: https://robocorp.com/docs/setup/installing-python-package-dependencies
+.. _poetry: https://python-poetry.org
+.. _invoke: https://www.pyinvoke.org
+.. _Visual Studio Code: https://code.visualstudio.com
+.. _GitHub: https://github.com/
 
-Installation
-------------
+
+
+Completion Challenge
+--------------------
+
+Robocorp is sponsoring an open challenge to the community to help complete this library!
+
+In order to do so, you should fork this library and create your own branch based on ``main`` and
+complete the code for the below list of keywords. Once you believe your code is ready, submit
+a pull request back to this library on ``main`` and submit your information to the 
+`Robocorp MSGraph Challenge form`_.
+
+Grading will start on September 2, 2022 and will be graded in the order they are received. 
+The winner is the first one to meet the following criteria:
+
+- All keywords include documentation on use by a Robot developer, including examples
+  in Robot Framework code.
+- All keywords signatures and return values have type hints.
+- All keywords return the appropriate type or execute the appropriate change in state.
+- All keywords are tested either via a ``pytest`` unit test or a robot test.
+- Code passes all linting checks (hint: run ``invoke lint`` before you create
+  a pull request!).
+- Code is formatted with ``black``.
+
+.. _Robocorp MSGraph Challenge form: https://robocorp.typeform.com/to/xGNs03v5
+
+Keywords Required
+^^^^^^^^^^^^^^^^^
+
+- ``List files in OneDrive folder``
+- ``Download file from OneDrive``
+- ``Find OneDrive file``
+- ``Download OneDrive file from share link``
+- ``Upload file to OneDrive``
+- ``Get Sharepoint site``
+- ``Get Sharepoint list``
+- ``Create Sharepoint list``
+- ``List Sharepoint site drives``
+- ``List files in Sharepoint site drive``
+- ``Download file from Sharepoint``
+
+Stretch Goals
+^^^^^^^^^^^^^
+
+The following keywords are not required to win the competition, but they are in need:
+
+- ``List calendars``
+- ``List calendar events``
+- ``Get calendar event``
+- ``Create new calendar event``
+
+Installing The Developer Environment
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In order to work on this library, you will need to install the developer environment.
+Luckily, with the help of `poetry`_ and `invoke`_, it should be relatively straight forward.
+
+Follow these steps to get your `VSCode`_` environment up and running (for other IDEs, you
+may need to find alternate tutorials):
+
+#. Fork this library on `GitHub`_.
+#. Install Python on your machine, we recommend v3.9.13.
+#. Use pip to install global copies of ``poetry`` and ``invoke`` from an elevated terminal
+
+.. code:: shell
+
+   pip install poetry invoke
+
+#. Clone your forked library locally.
+#. Execute the following ``invoke`` command, which should install the development environment
+   in a local ``.venv`` folder within your repository.
+
+.. code:: shell
+   
+   invoke setup-poetry install
+
+#. Open a ``*.py`` file and double check that VSCode is using the correct python interpreter
+   from the ``.venv`` folder.
+#. Run Python unit tests with ``invoke test-python``.
+
+Installation For Robot Developers
+---------------------------------
 
 Learn about installing Python packages at `Installing Python Packages`_.
 

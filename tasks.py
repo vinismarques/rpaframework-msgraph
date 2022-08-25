@@ -152,7 +152,7 @@ def setup_poetry(ctx, username=None, password=None, token=None):
         )
     if username and password:
         poetry(ctx, f"config -n http-basic.pypi {username} {password}")
-    else:
+    elif username or password:
         raise ParseError("You must specify both username and password")
     if token:
         poetry(ctx, f"config -n pypi-token.pypi {token}")
