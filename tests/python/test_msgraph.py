@@ -134,15 +134,6 @@ def test_refreshing_token(configured_lib: MSGraph, mocker: MockerFixture) -> Non
         "scopes": PermissionBundle.BASIC.value,
     }
 
-    # mock_graph_response = MagicMock(
-    #     spec=OAuth2Token, wraps=return_token, **scope_config
-    # )
-    # mock_graph_response.scope = "%20F".join(PermissionBundle.BASIC.value)
-    # mock_graph_response.scopes = PermissionBundle.BASIC.value
-    # mock_graph_response.__getitem__.side_effect = return_token.__getitem__
-    # mock_graph_response.__iter__.side_effect = return_token.__iter__
-    # mock_graph_response.__contains__.side_effect = return_token.__contains__
-    # mock_graph_response.keys.side_effect = return_token.keys
     config = {"return_value.refresh_token.return_value": return_token}
     mocker.patch("O365.connection.OAuth2Session", **config)
 
