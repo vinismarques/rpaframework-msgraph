@@ -52,14 +52,18 @@ EXPECTED_POETRY_CONFIG = {
     "virtualenvs": {"in-project": True, "create": True, "path": "null"},
     "experimental": {"new-installer": True},
     "installer": {"parallel": True},
-    "repositories": {"devpi": {"url": "https://devpi.robocorp.cloud/ci/test"}},
 }
 
 
 def _is_poetry_configured():
     try:
         poetry_toml = toml.load(GIT_ROOT / "poetry.toml")
-        return poetry_toml == EXPECTED_POETRY_CONFIG
+        return all(
+            [
+                poetry_toml.get(key, None) == value
+                for key, value in EXPECTED_POETRY_CONFIG.items()
+            ]
+        )
     except FileNotFoundError:
         return False
 
@@ -86,9 +90,9 @@ def docgen(ctx, command, *flags, **kwargs):
 
 def python_tool(ctx, tool, *args, **kwargs):
     if tool[-3:] != ".py":
-        tool_path = TOOLS_DIR / f"{tool}.py"
+        tool_path = TOOLS / f"{tool}.py"
     else:
-        tool_path = TOOLS_DIR / tool
+        tool_path = TOOLS / tool
     return poetry(ctx, f"run python {tool_path} {' '.join(args)}", **kwargs)
 
 
@@ -127,7 +131,7 @@ def clean(ctx, venv=True):
 
 
 @task
-def setup_poetry(ctx, username=None, password=None, token=None):
+def setup_poetry(ctx, username=None, password=None, token=None, devpi_url=None):
     """Configure local poetry installation for development.
     If you provide ``username`` and ``password``, you can
     also configure your pypi access. Our version of poetry
@@ -136,16 +140,21 @@ def setup_poetry(ctx, username=None, password=None, token=None):
 
     Alternatively, you can set ``token`` to use a pypi token, be sure
     to include the ``pypi-`` prefix in the token.
+
+    NOTE: Robocorp developers can use ``https://devpi.robocorp.cloud/ci/test``
+    as the devpi_url and obtain credentials from the Robocorp internal
+    documentation.
     """
     poetry(ctx, "config -n --local virtualenvs.in-project true")
     poetry(ctx, "config -n --local virtualenvs.create true")
     poetry(ctx, "config -n --local virtualenvs.path null")
     poetry(ctx, "config -n --local experimental.new-installer true")
     poetry(ctx, "config -n --local installer.parallel true")
-    poetry(
-        ctx,
-        "config -n --local repositories.devpi.url 'https://devpi.robocorp.cloud/ci/test'",
-    )
+    if devpi_url:
+        poetry(
+            ctx,
+            f"config -n --local repositories.devpi.url '{devpi_url}'",
+        )
     if username and password and token:
         raise ParseError(
             "You cannot specify username-password combination and token simultaneously"

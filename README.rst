@@ -26,6 +26,7 @@ Learn more about RPA at `Robocorp Documentation`_.
 
 .. _Robot Framework: https://robotframework.org
 .. _Robot Framework Foundation: https://robotframework.org/foundation/
+.. _RPA Framework: https://github.com/robocorp/rpaframework
 .. _Python: https://www.python.org/
 .. _Robocorp: https://robocorp.com
 .. _Robocorp Documentation: https://robocorp.com/docs/
@@ -94,20 +95,25 @@ Installing The Developer Environment
 In order to work on this library, you will need to install the developer environment.
 Luckily, with the help of `poetry`_ and `invoke`_, it should be relatively straight forward.
 
-Follow these steps to get your `VSCode`_` environment up and running (for other IDEs, you
-may need to find alternate tutorials):
+Follow these steps to get your `Visual Studio Code`_ environment up and
+running (these steps were generated from a Windows machine inside Visual Studio Code
+termainal, for other IDEs and operating systems, you may need to find alternate tutorials):
 
 #. Fork this library on `GitHub`_.
-#. Install Python on your machine, we recommend v3.9.13.
-#. Use pip to install global copies of ``poetry`` and ``invoke`` from an elevated terminal
+#. Install `Python`_ on your machine, we strongly recommend ``v3.9.13``.
+#. Use pip to install global copies of ``poetry``, ``invoke``, and ``toml`` from an elevated 
+   terminal into your v3.9.13 installation of Python (you may need to activate the proper
+   Python installation before performing this install if you have multiple Python versions
+   installed).
 
 .. code:: shell
 
-   pip install poetry invoke
+   pip install poetry invoke toml
 
 #. Clone your forked library locally.
-#. Execute the following ``invoke`` command, which should install the development environment
-   in a local ``.venv`` folder within your repository.
+#. Execute the following ``invoke`` command from the root of the repository in your filesystem, 
+   which should install the development environment in a local ``.venv`` folder within your 
+   repository.
 
 .. code:: shell
    
