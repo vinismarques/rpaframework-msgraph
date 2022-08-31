@@ -33,7 +33,7 @@ python = "^3.9"
 rpaframework-core = "^9.0.0"
 robotframework = ">=4.0.0,!=4.0.1,<6.0.0"
 robotframework-pythonlibcore = "^3.0.0"
-O365 = "^2.0.19"
+O365 = "<=2.0.17"
 
 [tool.poetry.dev-dependencies]
 black = "^22.3.0"
