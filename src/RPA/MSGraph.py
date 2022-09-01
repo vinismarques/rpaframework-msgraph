@@ -39,13 +39,13 @@ class MSGraph:
     The *MSGraph* library wraps the `O365 package`_, giving robots
     the ability to access the Microsoft Graph API programmatically.
 
-    Oauth Configuration
+    OAuth Configuration
     -------------------
 
     Graph's API primarily authenticates via the OAuth 2.0 authorization code grant
     flow or OpenID Connect. This library exposes the OAuth 2.0 flow for robots to
     authenticate on behalf of users. A user must complete an initial authentication
-    flow with the help of our `Oauth Graph Example Bot`_.
+    flow with the help of our `OAuth Graph Example Bot`_.
 
     For best results, `register an app`_ in Azure AD and configure it as so:
 
@@ -59,7 +59,7 @@ class MSGraph:
     .. TODO: Determine bundles of permissions needed for each keyword in the library.
 
     .. _O365 package: https://pypi.org/project/O365
-    .. _Oauth Graph Example Bot: https://robocorp.com/portal/
+    .. _OAuth Graph Example Bot: https://robocorp.com/portal/
     .. _register an app: https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade
     .. _Microsoft Graph permissions reference: https://docs.microsoft.com/en-us/graph/permissions-reference
 
@@ -96,7 +96,7 @@ class MSGraph:
             )
         elif vault_backend and not vault_secret:
             raise ValueError(
-                "Argument vault_secret cannot be blank is vault_backend set to True."
+                "Argument vault_secret cannot be blank if vault_backend set to True."
             )
         else:
             raise NotImplementedError(
@@ -176,7 +176,7 @@ class MSGraph:
     def authorize_and_get_token(self, authorization_url: str) -> str:
         # pylint: disable=anomalous-backslash-in-string
         """Exchanges the OAuth authorization URL obtained from
-        \`Generate OAuth authorize url\` for an access token. This
+        \`Generate OAuth Authorization URL\` for an access token. This
         library maintains the user access token for current requests
         and returns the refresh token to be stored in a secure location
         (e.g., the Robocorp Control Room Vault).
