@@ -244,15 +244,15 @@ class MSGraph:
 
     @keyword
     def list_files_in_onedrive_folder(
-        self, folder_path: str, drive_id: str = None
+        self, folder_path: str, resource: str = None, drive_id: str = None
     ) -> list[drive.DriveItem]:
         """Returns a list of files from the specified OneDrive folder.
 
         The files returned are DriveItem objects and they have additional
         properties that can be accessed with dot-notation.
 
-
         :param str folder_path: Path of the folder in OneDrive.
+        :param str resource: Name of the resource if not using default.
         :param str drive_id: Drive ID if not using default.
 
         .. code-block: robotframework
@@ -264,7 +264,7 @@ class MSGraph:
                 ${file_name}=    Set Variable    ${file.name}
         """
         self._require_authentication()
-        storage = self.client.storage()
+        storage = self.client.storage(resource=resource)
         if drive_id:
             drive = storage.get_drive(drive_id)
         else:
