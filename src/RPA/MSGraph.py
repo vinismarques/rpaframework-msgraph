@@ -1,7 +1,7 @@
 from enum import Enum
 import logging
 from typing import Optional, Union
-from O365 import Account, MSGraphProtocol, FileSystemTokenBackend, directory
+from O365 import Account, MSGraphProtocol, FileSystemTokenBackend, directory, drive
 from O365.utils import Token, BaseTokenBackend
 from O365.utils.utils import (
     ME_RESOURCE,
@@ -241,3 +241,35 @@ class MSGraph:
         directory = self.client.directory(resource)
         query = directory.new_query().search(search_string)
         return directory.get_users(query=query)
+
+    @keyword
+    def list_files_in_onedrive_folder(
+        self, folder_path: str, drive_id: str = None
+    ) -> list[drive.DriveItem]:
+        """Returns a list of files from the specified OneDrive folder.
+
+        The files returned are DriveItem objects and they have additional
+        properties that can be accessed with dot-notation.
+
+
+        :param str folder_path: Path of the folder in OneDrive.
+        :param str drive_id: Drive ID if not using default.
+
+        .. code-block: robotframework
+
+            *** Tasks ***
+            List files
+                ${files}=    List Files In Onedrive Folder    /path/to/file
+                ${file}=    Get From List    ${files}    0
+                ${file_name}=    Set Variable    ${file.name}
+        """
+        self._require_authentication()
+        storage = self.client.storage()
+        if drive_id:
+            drive = storage.get_drive(drive_id)
+        else:
+            drive = storage.get_default_drive()
+        folder = drive.get_item_by_path(folder_path)
+        items = list(folder.get_items())
+        files = [item for item in items if not item.is_folder]
+        return files
