@@ -82,6 +82,22 @@ def _patch_graph_response(
     return mocker.patch.object(library.client.connection.session, "request", **config)
 
 
+def _patch_multiple_graph_responses(
+    library: MSGraph, mocker: MockerFixture, return_values: list[dict]
+) -> MockerFixture._Patcher:
+    mocked_responses = []
+    for return_value in return_values:
+        mock_graph_response = MagicMock()
+        mock_graph_response.status_code = 200
+        mock_graph_response.headers = {"Content-Type": "application/json"}
+        mock_graph_response.json.return_value = return_value
+        mock_graph_response.text = JSONEncoder().encode(return_value)
+        mocked_responses.append(mock_graph_response)
+    config = {"side_effect": mocked_responses}
+
+    return mocker.patch.object(library.client.connection.session, "request", **config)
+
+
 def test_configuring_graph_client(library: MSGraph, mocker: MockerFixture) -> None:
     mock_client = mocker.patch("RPA.MSGraph.Account", autospec=True)
 
