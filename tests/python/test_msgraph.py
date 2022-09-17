@@ -82,6 +82,22 @@ def _patch_graph_response(
     return mocker.patch.object(library.client.connection.session, "request", **config)
 
 
+def _patch_multiple_graph_responses(
+    library: MSGraph, mocker: MockerFixture, return_values: list[dict]
+) -> MockerFixture._Patcher:
+    mocked_responses = []
+    for return_value in return_values:
+        mock_graph_response = MagicMock()
+        mock_graph_response.status_code = 200
+        mock_graph_response.headers = {"Content-Type": "application/json"}
+        mock_graph_response.json.return_value = return_value
+        mock_graph_response.text = JSONEncoder().encode(return_value)
+        mocked_responses.append(mock_graph_response)
+    config = {"side_effect": mocked_responses}
+
+    return mocker.patch.object(library.client.connection.session, "request", **config)
+
+
 def test_configuring_graph_client(library: MSGraph, mocker: MockerFixture) -> None:
     mock_client = mocker.patch("RPA.MSGraph.Account", autospec=True)
 
@@ -252,3 +268,64 @@ def test_search_for_users(
         assert user.user_principal_name in [
             u["userPrincipalName"] for u in response["value"]
         ]
+
+
+@pytest.mark.parametrize(
+    "search_string,responses",
+    [
+        (
+            "/Path/To/Folder/",
+            [
+                {
+                    "createdBy": {
+                        "user": {
+                            "id": "efee1b77-fb3b-4f65-99d6-274c11914d12",
+                            "displayName": "Ryan Gregg",
+                        }
+                    },
+                    "createdDateTime": "2016-03-21T20:01:37Z",
+                    "cTag": '"c:{86EB4C8E-D20D-46B9-AD41-23B8868DDA8A},0"',
+                    "eTag": '"{86EB4C8E-D20D-46B9-AD41-23B8868DDA8A},1"',
+                    "folder": {"childCount": 120},
+                    "id": "01NKDM7HMOJTVYMDOSXFDK2QJDXCDI3WUK",
+                    "lastModifiedBy": {
+                        "user": {
+                            "id": "efee1b77-fb3b-4f65-99d6-274c11914d12",
+                            "displayName": "Ryan Gregg",
+                        }
+                    },
+                    "lastModifiedDateTime": "2016-03-21T20:01:37Z",
+                    "name": "OneDrive",
+                    "root": {},
+                    "size": 157286400,
+                    "webUrl": "https://contoso-my.sharepoint.com/personal/rgregg_contoso_com/Documents",
+                },
+                {
+                    "value": [
+                        {"name": "myfile.jpg", "size": 2048, "file": {}},
+                        {"name": "Documents", "folder": {"childCount": 4}},
+                        {"name": "Photos", "folder": {"childCount": 203}},
+                        {"name": "my sheet(1).xlsx", "size": 197},
+                    ],
+                    "@odata.nextLink": "https://...",
+                },
+            ],
+        )
+    ],
+)
+def test_listing_files_onedrive_folder(
+    authorized_lib: MSGraph,
+    mocker: MockerFixture,
+    search_string: str,
+    responses: list[dict],
+) -> None:
+    _patch_multiple_graph_responses(authorized_lib, mocker, responses)
+
+    items = authorized_lib.list_files_in_onedrive_folder(search_string)
+
+    files_in_response = [
+        item for item in responses[1]["value"] if not item.get("folder")
+    ]
+    for i, item in enumerate(items):
+        assert item.name == files_in_response[i]["name"]
+        assert not item.is_folder

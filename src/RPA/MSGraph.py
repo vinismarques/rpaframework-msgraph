@@ -1,7 +1,7 @@
 from enum import Enum
 import logging
 from typing import Optional, Union
-from O365 import Account, MSGraphProtocol, FileSystemTokenBackend, directory
+from O365 import Account, MSGraphProtocol, FileSystemTokenBackend, directory, drive
 from O365.utils import Token, BaseTokenBackend
 from O365.utils.utils import (
     ME_RESOURCE,
@@ -39,13 +39,13 @@ class MSGraph:
     The *MSGraph* library wraps the `O365 package`_, giving robots
     the ability to access the Microsoft Graph API programmatically.
 
-    Oauth Configuration
+    OAuth Configuration
     -------------------
 
     Graph's API primarily authenticates via the OAuth 2.0 authorization code grant
     flow or OpenID Connect. This library exposes the OAuth 2.0 flow for robots to
     authenticate on behalf of users. A user must complete an initial authentication
-    flow with the help of our `Oauth Graph Example Bot`_.
+    flow with the help of our `OAuth Graph Example Bot`_.
 
     For best results, `register an app`_ in Azure AD and configure it as so:
 
@@ -59,7 +59,7 @@ class MSGraph:
     .. TODO: Determine bundles of permissions needed for each keyword in the library.
 
     .. _O365 package: https://pypi.org/project/O365
-    .. _Oauth Graph Example Bot: https://robocorp.com/portal/
+    .. _OAuth Graph Example Bot: https://robocorp.com/portal/
     .. _register an app: https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade
     .. _Microsoft Graph permissions reference: https://docs.microsoft.com/en-us/graph/permissions-reference
 
@@ -96,7 +96,7 @@ class MSGraph:
             )
         elif vault_backend and not vault_secret:
             raise ValueError(
-                "Argument vault_secret cannot be blank is vault_backend set to True."
+                "Argument vault_secret cannot be blank if vault_backend set to True."
             )
         else:
             raise NotImplementedError(
@@ -176,7 +176,7 @@ class MSGraph:
     def authorize_and_get_token(self, authorization_url: str) -> str:
         # pylint: disable=anomalous-backslash-in-string
         """Exchanges the OAuth authorization URL obtained from
-        \`Generate OAuth authorize url\` for an access token. This
+        \`Generate OAuth Authorization URL\` for an access token. This
         library maintains the user access token for current requests
         and returns the refresh token to be stored in a secure location
         (e.g., the Robocorp Control Room Vault).
@@ -241,3 +241,35 @@ class MSGraph:
         directory = self.client.directory(resource)
         query = directory.new_query().search(search_string)
         return directory.get_users(query=query)
+
+    @keyword
+    def list_files_in_onedrive_folder(
+        self, folder_path: str, drive_id: str = None
+    ) -> list[drive.DriveItem]:
+        """Returns a list of files from the specified OneDrive folder.
+
+        The files returned are DriveItem objects and they have additional
+        properties that can be accessed with dot-notation.
+
+
+        :param str folder_path: Path of the folder in OneDrive.
+        :param str drive_id: Drive ID if not using default.
+
+        .. code-block: robotframework
+
+            *** Tasks ***
+            List files
+                ${files}=    List Files In Onedrive Folder    /path/to/file
+                ${file}=    Get From List    ${files}    0
+                ${file_name}=    Set Variable    ${file.name}
+        """
+        self._require_authentication()
+        storage = self.client.storage()
+        if drive_id:
+            drive = storage.get_drive(drive_id)
+        else:
+            drive = storage.get_default_drive()
+        folder = drive.get_item_by_path(folder_path)
+        items = list(folder.get_items())
+        files = [item for item in items if not item.is_folder]
+        return files
