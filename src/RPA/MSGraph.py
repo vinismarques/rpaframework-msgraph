@@ -230,7 +230,7 @@ class MSGraph:
 
             *** Tasks ***
             Get the me object
-                ${me}=    Get me
+                ${me}=    Get Me
                 ${full_name}=    Set variable    ${me.full_name}
         """
         self._require_authentication()
@@ -245,7 +245,7 @@ class MSGraph:
         based on the provided search string.
 
         User objects have additional properties that can be accessed
-        with dot-notation, see \`Get me\` for additional details.
+        with dot-notation, see \`Get Me\` for additional details.
         """  # noqa: W605
         self._require_authentication()
         directory = self.client.directory(resource)
@@ -279,7 +279,7 @@ class MSGraph:
         self._require_authentication()
         drive = self._get_drive_instance(resource, drive_id)
         folder = drive.get_item_by_path(folder_path)
-        items = list(folder.get_items())
+        items = folder.get_items()
         files = [item for item in items if not item.is_folder]
         return files
 

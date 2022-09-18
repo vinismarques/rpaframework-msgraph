@@ -186,7 +186,7 @@ def test_get_me(authorized_lib: MSGraph, mocker: MockerFixture) -> None:
         (
             "adam",
             {
-                "@odasta.context": "https://graph.microsoft.com/v1.0/$metadata#users",
+                "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#users",
                 "value": [
                     {
                         "businessPhones": [],
@@ -304,7 +304,6 @@ def test_search_for_users(
                         {"name": "Photos", "folder": {"childCount": 203}},
                         {"name": "my sheet(1).xlsx", "size": 197},
                     ],
-                    "@odata.nextLink": "https://...",
                 },
             ],
         )
