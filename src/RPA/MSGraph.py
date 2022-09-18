@@ -133,6 +133,16 @@ class MSGraph:
         except AttributeError:
             return None
 
+    def _get_drive_instance(
+        self, resource: Optional[str] = None, drive_id: Optional[str] = None
+    ) -> drive.Drive:
+        """Returns the specified drive if any or the default one if none."""
+        storage = self.client.storage(resource=resource)
+        if drive_id:
+            return storage.get_drive(drive_id)
+        else:
+            return storage.get_default_drive()
+
     @keyword
     def configure_msgraph_client(
         self,
@@ -244,7 +254,10 @@ class MSGraph:
 
     @keyword
     def list_files_in_onedrive_folder(
-        self, folder_path: str, resource: str = None, drive_id: str = None
+        self,
+        folder_path: str,
+        resource: Optional[str] = None,
+        drive_id: Optional[str] = None,
     ) -> list[drive.DriveItem]:
         """Returns a list of files from the specified OneDrive folder.
 
@@ -259,16 +272,12 @@ class MSGraph:
 
             *** Tasks ***
             List files
-                ${files}=    List Files In Onedrive Folder    /path/to/file
+                ${files}=    List Files In Onedrive Folder    /path/to/folder
                 ${file}=    Get From List    ${files}    0
                 ${file_name}=    Set Variable    ${file.name}
         """
         self._require_authentication()
-        storage = self.client.storage(resource=resource)
-        if drive_id:
-            drive = storage.get_drive(drive_id)
-        else:
-            drive = storage.get_default_drive()
+        drive = self._get_drive_instance(resource, drive_id)
         folder = drive.get_item_by_path(folder_path)
         items = list(folder.get_items())
         files = [item for item in items if not item.is_folder]
