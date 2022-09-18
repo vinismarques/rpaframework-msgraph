@@ -327,3 +327,42 @@ def test_listing_files_onedrive_folder(
     for i, item in enumerate(items):
         assert item.name == files_in_response[i]["name"]
         assert not item.is_folder
+
+
+@pytest.mark.parametrize(
+    "file_path,responses",
+    [
+        (
+            "/Path/To/File",
+            [
+                {
+                    "name": "my notes.txt",
+                    "size": 197,
+                    "id": "01NKDM7HMOJTVYMDOSXFDK2QJDXCDI3WUK",
+                },
+                "dummy file content".encode(),
+            ],
+        )
+    ],
+)
+def test_downloading_file_from_onedrive(
+    authorized_lib: MSGraph,
+    mocker: MockerFixture,
+    file_path: str,
+    responses: list[dict],
+) -> None:
+    mocked_responses = []
+    mocked_responses.append(_create_graph_json_response(responses[0]))
+    mocked_response = MagicMock()
+    mocked_response.__enter__.return_value.status_code = 200
+    mocked_response.__enter__.return_value.headers = {
+        "Content-Type": "application/octet-stream"
+    }
+    mocked_response.__enter__.return_value.content = responses[1]
+    mocked_responses.append(mocked_response)
+    _patch_multiple_graph_responses(authorized_lib, mocker, mocked_responses)
+
+    success = authorized_lib.download_file_from_onedrive(file_path, TEMP_DIR)
+
+    assert success
+    assert Path(TEMP_DIR / responses[0]["name"]).exists()
