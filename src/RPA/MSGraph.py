@@ -282,3 +282,34 @@ class MSGraph:
         items = list(folder.get_items())
         files = [item for item in items if not item.is_folder]
         return files
+
+    @keyword
+    def download_file_from_onedrive(
+        self,
+        file_path: str,
+        target_directory: Optional[str] = None,
+        resource: Optional[str] = None,
+        drive_id: Optional[str] = None,
+    ) -> bool:
+        """Downloads a file from OneDrive.
+
+        The downloaded file will be saved to a local path.
+
+        :param str file_path: The file path of the source file
+        :param str target_directory: Destination of the downloaded file,
+                defaults to current directory.
+        :param str resource: Name of the resource if not using default.
+        :param str drive_id: Drive ID if not using default.
+
+        .. code-block: robotframework
+
+            *** Tasks ***
+            Download file
+                ${success}=    Download File From Onedrive
+                ...    /path/to/onedrive/file
+                ...    /path/to/local/folder
+        """
+        self._require_authentication()
+        drive = self._get_drive_instance(resource, drive_id)
+        file = drive.get_item_by_path(file_path)
+        return file.download(to_path=target_directory)
