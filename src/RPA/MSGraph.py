@@ -313,3 +313,33 @@ class MSGraph:
         drive = self._get_drive_instance(resource, drive_id)
         file = drive.get_item_by_path(file_path)
         return file.download(to_path=target_directory)
+
+    @keyword
+    def find_onedrive_file(
+        self,
+        search_string: str,
+        resource: Optional[str] = None,
+        drive_id: Optional[str] = None,
+    ) -> list[drive.DriveItem]:
+        """Returns a list of files found in OneDrive based on the search string.
+
+        The files returned are DriveItem objects and they have additional
+        properties that can be accessed with dot-notation, see
+        \`List Files In Onedrive Folder`\ for details.
+
+        :param str search_string: String used to search for file in OneDrive.
+        :param str resource: Name of the resource if not using default.
+        :param str drive_id: Drive ID if not using default.
+
+        .. code-block: robotframework
+
+            *** Tasks ***
+            List files
+                ${files}=    Find Onedrive File    Report.xlsx
+                ${file}=    Get From List    ${files}    0
+        """
+        self._require_authentication()
+        drive = self._get_drive_instance(resource, drive_id)
+        items = drive.search(search_string)
+        files = [item for item in items if not item.is_folder]
+        return files
