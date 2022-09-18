@@ -230,7 +230,7 @@ class MSGraph:
 
             *** Tasks ***
             Get the me object
-                ${me}=    Get me
+                ${me}=    Get Me
                 ${full_name}=    Set variable    ${me.full_name}
         """
         self._require_authentication()
@@ -245,7 +245,7 @@ class MSGraph:
         based on the provided search string.
 
         User objects have additional properties that can be accessed
-        with dot-notation, see \`Get me\` for additional details.
+        with dot-notation, see \`Get Me\` for additional details.
         """  # noqa: W605
         self._require_authentication()
         directory = self.client.directory(resource)
@@ -279,7 +279,7 @@ class MSGraph:
         self._require_authentication()
         drive = self._get_drive_instance(resource, drive_id)
         folder = drive.get_item_by_path(folder_path)
-        items = list(folder.get_items())
+        items = folder.get_items()
         files = [item for item in items if not item.is_folder]
         return files
 
@@ -313,3 +313,33 @@ class MSGraph:
         drive = self._get_drive_instance(resource, drive_id)
         file = drive.get_item_by_path(file_path)
         return file.download(to_path=target_directory)
+
+    @keyword
+    def find_onedrive_file(
+        self,
+        search_string: str,
+        resource: Optional[str] = None,
+        drive_id: Optional[str] = None,
+    ) -> list[drive.DriveItem]:
+        """Returns a list of files found in OneDrive based on the search string.
+
+        The files returned are DriveItem objects and they have additional
+        properties that can be accessed with dot-notation, see
+        \`List Files In Onedrive Folder`\ for details.
+
+        :param str search_string: String used to search for file in OneDrive.
+        :param str resource: Name of the resource if not using default.
+        :param str drive_id: Drive ID if not using default.
+
+        .. code-block: robotframework
+
+            *** Tasks ***
+            List files
+                ${files}=    Find Onedrive File    Report.xlsx
+                ${file}=    Get From List    ${files}    0
+        """
+        self._require_authentication()
+        drive = self._get_drive_instance(resource, drive_id)
+        items = drive.search(search_string)
+        files = [item for item in items if not item.is_folder]
+        return files

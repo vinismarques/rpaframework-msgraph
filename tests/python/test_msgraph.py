@@ -186,7 +186,7 @@ def test_get_me(authorized_lib: MSGraph, mocker: MockerFixture) -> None:
         (
             "adam",
             {
-                "@odasta.context": "https://graph.microsoft.com/v1.0/$metadata#users",
+                "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#users",
                 "value": [
                     {
                         "businessPhones": [],
@@ -304,7 +304,6 @@ def test_search_for_users(
                         {"name": "Photos", "folder": {"childCount": 203}},
                         {"name": "my sheet(1).xlsx", "size": 197},
                     ],
-                    "@odata.nextLink": "https://...",
                 },
             ],
         )
@@ -366,3 +365,42 @@ def test_downloading_file_from_onedrive(
 
     assert success
     assert Path(TEMP_DIR / responses[0]["name"]).exists()
+
+
+@pytest.mark.parametrize(
+    "search_string,response",
+    [
+        (
+            "Contoso Project",
+            {
+                "value": [
+                    {
+                        "id": "0123456789abc!123",
+                        "name": "Contoso Project",
+                        "folder": {},
+                        "searchResult": {
+                            "onClickTelemetryUrl": "https://bing.com/0123456789abc!123"
+                        },
+                    },
+                    {
+                        "id": "0123456789abc!456",
+                        "name": "Contoso Project 2016",
+                        "folder": {},
+                        "searchResult": {
+                            "onClickTelemetryUrl": "https://bing.com/0123456789abc!456"
+                        },
+                    },
+                ],
+            },
+        )
+    ],
+)
+def test_finding_onedrive_file(
+    authorized_lib: MSGraph, mocker: MockerFixture, search_string: str, response: dict
+) -> None:
+    _patch_graph_response(authorized_lib, mocker, response)
+
+    items = authorized_lib.find_onedrive_file(search_string)
+    for item in items:
+        assert item.object_id in [i["id"] for i in response["value"]]
+        assert item.name in [i["name"] for i in response["value"]]
