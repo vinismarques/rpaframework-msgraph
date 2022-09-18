@@ -69,30 +69,27 @@ def _patch_token_response(
     )
 
 
-def _patch_graph_response(
-    library: MSGraph, mocker: MockerFixture, return_value: dict
-) -> MockerFixture._Patcher:
+def _create_graph_json_response(return_value: dict) -> MagicMock:
     mock_graph_response = MagicMock()
     mock_graph_response.status_code = 200
     mock_graph_response.headers = {"Content-Type": "application/json"}
     mock_graph_response.json.return_value = return_value
     mock_graph_response.text = JSONEncoder().encode(return_value)
+    return mock_graph_response
+
+
+def _patch_graph_response(
+    library: MSGraph, mocker: MockerFixture, return_value: dict
+) -> MockerFixture._Patcher:
+    mock_graph_response = _create_graph_json_response(return_value)
     config = {"return_value": mock_graph_response}
 
     return mocker.patch.object(library.client.connection.session, "request", **config)
 
 
 def _patch_multiple_graph_responses(
-    library: MSGraph, mocker: MockerFixture, return_values: list[dict]
+    library: MSGraph, mocker: MockerFixture, mocked_responses: list[MagicMock]
 ) -> MockerFixture._Patcher:
-    mocked_responses = []
-    for return_value in return_values:
-        mock_graph_response = MagicMock()
-        mock_graph_response.status_code = 200
-        mock_graph_response.headers = {"Content-Type": "application/json"}
-        mock_graph_response.json.return_value = return_value
-        mock_graph_response.text = JSONEncoder().encode(return_value)
-        mocked_responses.append(mock_graph_response)
     config = {"side_effect": mocked_responses}
 
     return mocker.patch.object(library.client.connection.session, "request", **config)
@@ -271,7 +268,7 @@ def test_search_for_users(
 
 
 @pytest.mark.parametrize(
-    "search_string,responses",
+    "folder_path,responses",
     [
         (
             "/Path/To/Folder/",
@@ -316,12 +313,13 @@ def test_search_for_users(
 def test_listing_files_onedrive_folder(
     authorized_lib: MSGraph,
     mocker: MockerFixture,
-    search_string: str,
+    folder_path: str,
     responses: list[dict],
 ) -> None:
-    _patch_multiple_graph_responses(authorized_lib, mocker, responses)
+    mocked_responses = [_create_graph_json_response(r) for r in responses]
+    _patch_multiple_graph_responses(authorized_lib, mocker, mocked_responses)
 
-    items = authorized_lib.list_files_in_onedrive_folder(search_string)
+    items = authorized_lib.list_files_in_onedrive_folder(folder_path)
 
     files_in_response = [
         item for item in responses[1]["value"] if not item.get("folder")
