@@ -321,6 +321,7 @@ class MSGraph:
         resource: Optional[str] = None,
         drive_id: Optional[str] = None,
     ) -> list[drive.DriveItem]:
+        # pylint: disable=anomalous-backslash-in-string
         """Returns a list of files found in OneDrive based on the search string.
 
         The files returned are DriveItem objects and they have additional
@@ -337,7 +338,7 @@ class MSGraph:
             List files
                 ${files}=    Find Onedrive File    Report.xlsx
                 ${file}=    Get From List    ${files}    0
-        """
+        """  # noqa: W605
         self._require_authentication()
         drive = self._get_drive_instance(resource, drive_id)
         items = drive.search(search_string)
