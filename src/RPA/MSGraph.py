@@ -334,7 +334,7 @@ class MSGraph:
         .. code-block: robotframework
 
             *** Tasks ***
-            List files
+            Find file
                 ${files}=    Find Onedrive File    Report.xlsx
                 ${file}=    Get From List    ${files}    0
         """
