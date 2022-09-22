@@ -534,6 +534,7 @@ class MSGraph:
 
     @keyword
     def list_sharepoint_site_drives(self, site: sharepoint.Site) -> list[drive.Drive]:
+        # pylint: disable=anomalous-backslash-in-string
         """Get a list of Drives available in the SharePoint Site.
 
         :param Site site: Site instance obtained from \`Get Sharepoint Site\`.
@@ -546,7 +547,7 @@ class MSGraph:
                 FOR    ${drive}    IN    @{drives}
                     Log    ${drive.name}
                 END
-        """
+        """  # noqa: W605
         self._require_authentication()
 
         return site.list_document_libraries()
