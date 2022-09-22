@@ -477,3 +477,27 @@ class MSGraph:
         sp = self.client.sharepoint(resource=resource)
 
         return sp.get_site(*args)
+
+    @keyword
+    def get_sharepoint_list(
+        self,
+        list_name: str,
+        site: sharepoint.Site,
+    ) -> sharepoint.SharepointList:
+        # pylint: disable=anomalous-backslash-in-string
+        """Returns a sharepoint list based on the display name of the list.
+
+        :param str list_name: Display name of the SharePoint list.
+        :param Site site: Site instance obtained from \`Get Sharepoint Site\`.
+
+        .. code-block: robotframework
+
+            *** Tasks ***
+            Get List
+                ${sharepoint_list}=    Get Sharepoint List    My List    ${site}
+                ${name}=    Set Variable    ${list.name}
+                ${id}=    Set Variable    ${list.object_id}
+        """  # noqa: W605
+        self._require_authentication()
+
+        return site.get_list_by_name(list_name)
