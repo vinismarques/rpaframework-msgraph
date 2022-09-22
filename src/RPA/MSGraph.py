@@ -531,3 +531,22 @@ class MSGraph:
         self._require_authentication()
 
         return site.create_list(list_data)
+
+    @keyword
+    def list_sharepoint_site_drives(self, site: sharepoint.Site) -> list[drive.Drive]:
+        """Get a list of Drives available in the SharePoint Site.
+
+        :param Site site: Site instance obtained from \`Get Sharepoint Site\`.
+
+        .. code-block: robotframework
+
+            *** Tasks ***
+            List SharePoint drives
+                ${drives}    List Sharepoint Site Drives    ${site}
+                FOR    ${drive}    IN    @{drives}
+                    Log    ${drive.name}
+                END
+        """
+        self._require_authentication()
+
+        return site.list_document_libraries()
