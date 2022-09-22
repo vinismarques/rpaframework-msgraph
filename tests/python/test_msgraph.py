@@ -561,3 +561,23 @@ def test_get_sharepoint_site(
 
     assert site.display_name == response["displayName"]
     assert site.object_id == response["id"]
+
+
+def test_get_sharepoint_list(
+    authorized_lib: MSGraph, mocker: MockerFixture, sharepoint_site: Site
+) -> None:
+    list_name = "Documents"
+    response = {
+        "id": "b57af081-936c-4803-a120-d94887b03864",
+        "name": "Documents",
+        "createdDateTime": "2016-08-30T08:32:00Z",
+        "lastModifiedDateTime": "2016-08-30T08:32:00Z",
+        "list": {"hidden": False, "template": "documentLibrary"},
+    }
+    _patch_graph_response(authorized_lib, mocker, response)
+
+    list = authorized_lib.get_sharepoint_list(list_name, sharepoint_site)
+
+    assert list.name == list_name
+    assert list.object_id == response["id"]
+    assert list.hidden == response["list"]["hidden"]
