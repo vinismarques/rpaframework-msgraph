@@ -344,7 +344,7 @@ class MSGraph:
 
         The files returned are DriveItem objects and they have additional
         properties that can be accessed with dot-notation, see
-        \`List Files In Onedrive Folder`\ for details.
+        \`List Files In Onedrive Folder\` for details.
 
         :param str search_string: String used to search for file in OneDrive.
         :param str resource: Name of the resource if not using default.
@@ -443,23 +443,24 @@ class MSGraph:
 
     @keyword
     def get_sharepoint_site(
-        self, *args: tuple(str), resource: Optional[str] = None
+        self, *args: tuple[str], resource: Optional[str] = SITES_RESOURCE
     ) -> sharepoint.Site:
-        """Returns a SharePoint site
+        """Returns a SharePoint site.
 
-        :param args: It accepts multiple ways of retrieving a site:
+        :param args: It accepts multiple ways of retrieving a site. See below.
 
-         get_site(host_name): the host_name: host_name e.g.
-         'contoso.sharepoint.com' or 'root'
+         get_site(host_name): the host_name e.g. 'contoso.sharepoint.com'
+         or 'root'.
 
          get_site(site_id): the site_id is a comma separated string of
-         (host_name, site_collection_id, site_id)
+         (host_name, site_collection_id, site_id).
 
          get_site(host_name, path_to_site): host_name e.g. 'contoso.
-         sharepoint.com', path_to_site: a url path (with a leading slash)
+         sharepoint.com' and path_to_site is a url path (with a leading slash).
 
-         get_site(host_name, site_collection_id, site_id):
-         host_name e.g. 'contoso.sharepoint.com'
+         get_site(host_name, site_collection_id, site_id): a collection of
+         (host_name, site_collection_id, site_id).
+
         :param str resource: Name of the resource if not using default.
 
         The return is of type Site and it has additional properties
