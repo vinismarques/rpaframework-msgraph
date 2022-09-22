@@ -576,8 +576,9 @@ def test_get_sharepoint_list(
     }
     _patch_graph_response(authorized_lib, mocker, response)
 
-    list = authorized_lib.get_sharepoint_list(list_name, sharepoint_site)
+    sp_list = authorized_lib.get_sharepoint_list(list_name, sharepoint_site)
 
-    assert list.name == list_name
-    assert list.object_id == response["id"]
-    assert list.hidden == response["list"]["hidden"]
+    assert sp_list.object_id == response["id"]
+    assert sp_list.name == list_name
+    assert sp_list.hidden == response["list"]["hidden"]
+

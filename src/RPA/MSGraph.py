@@ -495,8 +495,10 @@ class MSGraph:
             *** Tasks ***
             Get List
                 ${sharepoint_list}=    Get Sharepoint List    My List    ${site}
-                ${name}=    Set Variable    ${list.name}
+                ${list_name}=    Set Variable    ${list.name}
+                ${description}=    Set Variable    ${list.description}
                 ${id}=    Set Variable    ${list.object_id}
+                ${creator_name}=    Set Variable    ${list.created_by.display_name}
         """  # noqa: W605
         self._require_authentication()
 
