@@ -578,7 +578,44 @@ def test_get_sharepoint_list(
 
     sp_list = authorized_lib.get_sharepoint_list(list_name, sharepoint_site)
 
-    assert sp_list.object_id == response["id"]
     assert sp_list.name == list_name
+    assert sp_list.object_id == response["id"]
     assert sp_list.hidden == response["list"]["hidden"]
 
+
+def test_create_sharepoint_list(
+    authorized_lib: MSGraph, mocker: MockerFixture, sharepoint_site: Site
+) -> None:
+    new_list_data = {
+        "displayName": "Books",
+        "columns": [
+            {"name": "Author", "text": {}},
+            {"name": "PageCount", "number": {}},
+        ],
+        "list": {"template": "genericList"},
+    }
+    response = {
+        "id": "22e03ef3-6ef4-424d-a1d3-92a337807c30",
+        "createdDateTime": "2017-04-30T01:21:00Z",
+        "createdBy": {
+            "user": {
+                "displayName": "Ryan Gregg",
+                "id": "8606e4d5-d582-4f5f-aeba-7d7c18b20cfd",
+            }
+        },
+        "lastModifiedDateTime": "2016-08-30T08:26:00Z",
+        "lastModifiedBy": {
+            "user": {
+                "displayName": "Ryan Gregg",
+                "id": "8606e4d5-d582-4f5f-aeba-7d7c18b20cfd",
+            }
+        },
+    }
+    _patch_graph_response(authorized_lib, mocker, response)
+
+    sp_list = authorized_lib.create_sharepoint_list(new_list_data, sharepoint_site)
+
+    assert sp_list.object_id == response["id"]
+    assert (
+        sp_list.created_by.display_name == response["createdBy"]["user"]["displayName"]
+    )
