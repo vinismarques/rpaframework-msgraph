@@ -2,6 +2,7 @@ import base64
 from enum import Enum
 import logging
 from typing import Optional, Union
+from pathlib import Path
 from O365 import (
     Account,
     MSGraphProtocol,
@@ -11,14 +12,13 @@ from O365 import (
     sharepoint,
 )
 from O365.utils import Token, BaseTokenBackend
-from O365.utils.utils import (  # noqa: F401
+from O365.utils.utils import (  # noqa: F401 pylint: disable=unused-import
     ME_RESOURCE,
     USERS_RESOURCE,
     GROUPS_RESOURCE,
     SITES_RESOURCE,
 )
 from robot.api.deco import keyword
-from pathlib import Path
 
 
 DEFAULT_REDIRECT_URI = "https://login.microsoftonline.com/common/oauth2/nativeclient"
@@ -30,6 +30,8 @@ BASIC_SCOPE = DEFAULT_PROTOCOL.get_scopes_for("basic")
 
 
 class PermissionBundle(Enum):
+    """Permission scopes available for authorization."""
+
     BASIC = BASIC_SCOPE
 
 
@@ -39,7 +41,6 @@ class MSGraphAuthenticationError(Exception):
 
 class RobocorpVaultTokenBackend(BaseTokenBackend):
     "A simple Token backend that saves to Robocorp vault"
-    pass
 
 
 class MSGraph:
@@ -81,7 +82,7 @@ class MSGraph:
         self,
         client_id: Optional[str] = None,
         client_secret: Optional[str] = None,
-        token: Optional[Token] = None,
+        token: Optional[Token] = None,  # pylint: disable=unused-argument
         refresh_token: Optional[str] = None,
         redirect_uri: Optional[str] = None,
         vault_backend: bool = False,
@@ -152,6 +153,9 @@ class MSGraph:
             return storage.get_default_drive()
 
     def _encode_share_url(self, file_url: str) -> str:
+        """Encodes the OneDrive file share link to a format supported
+        by the Graph API.
+        """
         base64_bytes = base64.b64encode(bytes(file_url, "utf-8"))
         base64_string = (
             base64_bytes.decode("utf-8")
@@ -186,6 +190,7 @@ class MSGraph:
         self.redirect_uri = redirect_uri
         if refresh_token:
             return self.refresh_oauth_token(refresh_token)
+        return None
 
     @keyword
     def generate_oauth_authorization_url(
@@ -274,9 +279,9 @@ class MSGraph:
         with dot-notation, see \`Get Me\` for additional details.
         """  # noqa: W605
         self._require_authentication()
-        directory = self.client.directory(resource)
-        query = directory.new_query().search(search_string)
-        return directory.get_users(query=query)
+        active_directory = self.client.directory(resource)
+        query = active_directory.new_query().search(search_string)
+        return active_directory.get_users(query=query)
 
     @keyword
     def list_files_in_onedrive_folder(
@@ -304,8 +309,8 @@ class MSGraph:
                 ${file_name}=    Set Variable    ${file.name}
         """
         self._require_authentication()
-        drive = self._get_drive_instance(resource, drive_id)
-        folder = drive.get_item_by_path(folder_path)
+        my_drive = self._get_drive_instance(resource, drive_id)
+        folder = my_drive.get_item_by_path(folder_path)
         items = folder.get_items()
         files = [item for item in items if not item.is_folder]
         return files
@@ -338,8 +343,8 @@ class MSGraph:
                 ...    /path/to/local/folder
         """
         self._require_authentication()
-        drive = self._get_drive_instance(resource, drive_id)
-        file = drive.get_item_by_path(file_path)
+        my_drive = self._get_drive_instance(resource, drive_id)
+        file = my_drive.get_item_by_path(file_path)
         return file.download(to_path=target_directory)
 
     @keyword
@@ -369,8 +374,8 @@ class MSGraph:
                 ${file}=    Get From List    ${files}    0
         """  # noqa: W605
         self._require_authentication()
-        drive = self._get_drive_instance(resource, drive_id)
-        items = drive.search(search_string)
+        my_drive = self._get_drive_instance(resource, drive_id)
+        items = my_drive.search(search_string)
         files = [item for item in items if not item.is_folder]
         return files
 
@@ -382,6 +387,7 @@ class MSGraph:
         resource: Optional[str] = None,
         drive_id: Optional[str] = None,
     ) -> bool:
+        # pylint: disable=protected-access
         """Downloads file from the specified OneDrive share link.
 
         The downloaded file will be saved to a local path.
@@ -448,8 +454,8 @@ class MSGraph:
                 ...    /path/to/folder
         """  # noqa: W605
         self._require_authentication()
-        drive = self._get_drive_instance(resource, drive_id)
-        folder = drive.get_item_by_path(folder_path)
+        my_drive = self._get_drive_instance(resource, drive_id)
+        folder = my_drive.get_item_by_path(folder_path)
         return folder.upload_file(item=file_path)
 
     @keyword
