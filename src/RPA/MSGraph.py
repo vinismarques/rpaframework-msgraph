@@ -2,7 +2,14 @@ import base64
 from enum import Enum
 import logging
 from typing import Optional, Union
-from O365 import Account, MSGraphProtocol, FileSystemTokenBackend, directory, drive
+from O365 import (
+    Account,
+    MSGraphProtocol,
+    FileSystemTokenBackend,
+    directory,
+    drive,
+    sharepoint,
+)
 from O365.utils import Token, BaseTokenBackend
 from O365.utils.utils import (
     ME_RESOURCE,
@@ -337,7 +344,7 @@ class MSGraph:
 
         The files returned are DriveItem objects and they have additional
         properties that can be accessed with dot-notation, see
-        \`List Files In Onedrive Folder`\ for details.
+        \`List Files In Onedrive Folder\` for details.
 
         :param str search_string: String used to search for file in OneDrive.
         :param str resource: Name of the resource if not using default.
@@ -433,3 +440,40 @@ class MSGraph:
         drive = self._get_drive_instance(resource, drive_id)
         folder = drive.get_item_by_path(folder_path)
         return folder.upload_file(item=file_path)
+
+    @keyword
+    def get_sharepoint_site(
+        self, *args: tuple[str], resource: Optional[str] = SITES_RESOURCE
+    ) -> sharepoint.Site:
+        """Returns a SharePoint site.
+
+        :param args: It accepts multiple ways of retrieving a site. See below.
+
+         get_site(host_name): the host_name e.g. 'contoso.sharepoint.com'
+         or 'root'.
+
+         get_site(site_id): the site_id is a comma separated string of
+         (host_name, site_collection_id, site_id).
+
+         get_site(host_name, path_to_site): host_name e.g. 'contoso.
+         sharepoint.com' and path_to_site is a url path (with a leading slash).
+
+         get_site(host_name, site_collection_id, site_id): a collection of
+         (host_name, site_collection_id, site_id).
+
+        :param str resource: Name of the resource if not using default.
+
+        The return is of type Site and it has additional properties
+        that can be accessed with dot-notation.
+
+        .. code-block: robotframework
+
+            *** Tasks ***
+            Get site
+                ${site}=    Get Sharepoint Site    contoso.sharepoint.com
+                ${site_name}=    Set Variable    ${site.display_name}
+        """
+        self._require_authentication()
+        sp = self.client.sharepoint(resource=resource)
+
+        return sp.get_site(*args)

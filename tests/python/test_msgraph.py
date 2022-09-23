@@ -506,3 +506,41 @@ def test_uploading_file_to_onedrive(
     item = authorized_lib.upload_file_to_onedrive(file_path, folder_path)
 
     assert item.name == responses[1]["name"]
+
+
+@pytest.mark.parametrize(
+    "args",
+    [
+        ("root"),
+        ("contoso.sharepoint.com"),
+        ("contoso.sharepoint.com", "/path/to/site"),
+        (
+            "contoso.sharepoint.com,a384ebb0-67a5-4976-a7eb-60bbd5d5f87a,f0a2c07f-bfa0-4259-b9cd-fbdab88ebcf4"
+        ),
+        (
+            "contoso.sharepoint.com",
+            "a384ebb0-67a5-4976-a7eb-60bbd5d5f87a",
+            "f0a2c07f-bfa0-4259-b9cd-fbdab88ebcf4",
+        ),
+    ],
+)
+def test_get_sharepoint_site(
+    authorized_lib: MSGraph, mocker: MockerFixture, args: tuple
+) -> None:
+    response = {
+        "id": "contoso.sharepoint.com,2C712604-1370-44E7-A1F5-426573FDA80A,2D2244C3-251A-49EA-93A8-39E1C3A060FE",
+        "displayName": "OneDrive Team Site",
+        "name": "1drvteam",
+        "createdDateTime": "2017-05-09T20:56:00Z",
+        "lastModifiedDateTime": "2017-05-09T20:56:01Z",
+        "webUrl": "https://contoso.sharepoint.com/teams/1drvteam",
+    }
+    _patch_graph_response(authorized_lib, mocker, response)
+
+    if isinstance(args, str):
+        site = authorized_lib.get_sharepoint_site(args)
+    else:
+        site = authorized_lib.get_sharepoint_site(*args)
+
+    assert site.display_name == response["displayName"]
+    assert site.object_id == response["id"]
