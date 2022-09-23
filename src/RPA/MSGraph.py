@@ -197,12 +197,18 @@ class MSGraph:
         self,
         client_id: Optional[str] = None,
         client_secret: Optional[str] = None,
-        redirect_uri: str = DEFAULT_REDIRECT_URI,
+        redirect_uri: str = None,
         scope: PermissionBundle = PermissionBundle.BASIC,
     ) -> str:
         """Generates an authorization URL which must be opened
         by the user to complete the OAuth flow.
         """
+        if redirect_uri is None:
+            redirect_uri = (
+                self.redirect_uri
+                if self.redirect_uri is not None
+                else DEFAULT_REDIRECT_URI
+            )
         if not self.client:
             self.configure_msgraph_client(
                 client_id, client_secret, redirect_uri=redirect_uri
