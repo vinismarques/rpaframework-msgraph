@@ -161,6 +161,13 @@ class MSGraph:
         )
         return "u!{}".format(base64_string)
 
+    def _get_sharepoint_drive(self, site: sharepoint.Site, drive_id: str = None):
+        """Returns the specified SharePoint drive if any or the default one if none."""
+        if drive_id:
+            return site.get_document_library(drive_id)
+        else:
+            return site.get_default_document_library()
+
     @keyword
     def configure_msgraph_client(
         self,
@@ -546,8 +553,41 @@ class MSGraph:
                 ${drives}    List Sharepoint Site Drives    ${site}
                 FOR    ${drive}    IN    @{drives}
                     Log    ${drive.name}
+                    Log    ${drive.object_id}
                 END
         """  # noqa: W605
         self._require_authentication()
 
         return site.list_document_libraries()
+
+    @keyword
+    def list_files_in_sharepoint_site_drive(
+        self, site: sharepoint.Site, drive_id: Optional[str] = None
+    ) -> drive.DriveItem:
+        # pylint: disable=anomalous-backslash-in-string
+        """List files in the SharePoint Site drive.
+
+        If the drive_id is not informed, the defaul Document Library will be used.
+        The drive_id can be obtained from the keyword \`List Sharepoint Site Drives\`.
+
+        The files returned are DriveItem objects and they have additional
+        properties that can be accessed with dot-notation, see
+        \`List Files In Onedrive Folder\` for details.
+
+        :param Site site: Site instance obtained from \`Get Sharepoint Site\`.
+        :param str drive_id: The id of the desired drive.
+
+        .. code-block: robotframework
+
+            *** Tasks ***
+
+            List files in SharePoint drive
+                ${files}    List Files In Sharepoint Site Drive    ${site}
+                FOR    ${file}    IN    @{files}
+                    Log    ${file.name}
+                END
+        """  # noqa: W605
+        self._require_authentication()
+        sp_drive = self._get_sharepoint_drive(site, drive_id)
+
+        return sp_drive.get_items()
