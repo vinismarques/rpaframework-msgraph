@@ -1,3 +1,4 @@
+import base64
 from enum import Enum
 import logging
 from typing import Optional, Union
@@ -142,6 +143,16 @@ class MSGraph:
             return storage.get_drive(drive_id)
         else:
             return storage.get_default_drive()
+
+    def _encode_share_url(self, file_url: str) -> str:
+        base64_bytes = base64.b64encode(bytes(file_url, "utf-8"))
+        base64_string = (
+            base64_bytes.decode("utf-8")
+            .replace("=", "")
+            .replace("/", "_")
+            .replace("+", "-")
+        )
+        return "u!{}".format(base64_string)
 
     @keyword
     def configure_msgraph_client(
@@ -321,6 +332,7 @@ class MSGraph:
         resource: Optional[str] = None,
         drive_id: Optional[str] = None,
     ) -> list[drive.DriveItem]:
+        # pylint: disable=anomalous-backslash-in-string
         """Returns a list of files found in OneDrive based on the search string.
 
         The files returned are DriveItem objects and they have additional
@@ -337,9 +349,58 @@ class MSGraph:
             List files
                 ${files}=    Find Onedrive File    Report.xlsx
                 ${file}=    Get From List    ${files}    0
-        """
+        """  # noqa: W605
         self._require_authentication()
         drive = self._get_drive_instance(resource, drive_id)
         items = drive.search(search_string)
         files = [item for item in items if not item.is_folder]
         return files
+
+    @keyword
+    def download_onedrive_file_from_share_link(
+        self,
+        share_url: str,
+        target_directory: Optional[str] = None,
+        resource: Optional[str] = None,
+        drive_id: Optional[str] = None,
+    ) -> bool:
+        """Downloads file from the specified OneDrive share link.
+
+        The downloaded file will be saved to a local path.
+
+        :param str share_url: The URL of the shared file
+        :param str target_directory: Destination of the downloaded file,
+                defaults to current directory.
+        :param str resource: Name of the resource if not using default.
+        :param str drive_id: Drive ID if not using default.
+
+        .. code-block: robotframework
+
+            *** Tasks ***
+            Download file
+                ${success}=    Download Onedrive File From Share Link
+                ...    https://...
+                ...    /path/to/local/folder
+        """
+        self._require_authentication()
+        drive_instance = self._get_drive_instance(resource, drive_id)
+
+        # O365 doesn't support getting items from shared links yet
+        base_url = self.client.protocol.service_url
+        base_url = base_url[:-1] if base_url.endswith("/") else base_url
+        encoded_url = self._encode_share_url(share_url)
+        endpoint = "/shares/{id}/driveItem"
+        direct_url = "{}{}".format(base_url, endpoint.format(id=encoded_url))
+
+        response = self.client.con.get(direct_url)
+        if not response:
+            return None
+
+        data = response.json()
+
+        # Everything received from cloud must be passed as self._cloud_data_key
+        file = drive_instance._classifier(data)(
+            parent=drive_instance, **{drive_instance._cloud_data_key: data}
+        )
+
+        return file.download(to_path=target_directory)

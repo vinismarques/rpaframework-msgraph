@@ -404,3 +404,42 @@ def test_finding_onedrive_file(
     for item in items:
         assert item.object_id in [i["id"] for i in response["value"]]
         assert item.name in [i["name"] for i in response["value"]]
+
+
+@pytest.mark.parametrize(
+    "share_url,responses",
+    [
+        (
+            "https://1drv.ms/v/s!AjonToUPWqXmgjO3RqDbhRaSMrOM",
+            [
+                {
+                    "name": "report.txt",
+                    "size": 1997,
+                    "id": "01NKDM7HMOJTVYMDOSXFDK2QJDXCDI3WUK",
+                },
+                "dummy file content".encode(),
+            ],
+        )
+    ],
+)
+def test_downloading_from_onedrive_with_link(
+    authorized_lib: MSGraph,
+    mocker: MockerFixture,
+    share_url: str,
+    responses: list[dict],
+) -> None:
+    mocked_responses = []
+    mocked_responses.append(_create_graph_json_response(responses[0]))
+    mocked_response = MagicMock()
+    mocked_response.__enter__.return_value.status_code = 200
+    mocked_response.__enter__.return_value.headers = {
+        "Content-Type": "application/octet-stream"
+    }
+    mocked_response.__enter__.return_value.content = responses[1]
+    mocked_responses.append(mocked_response)
+    _patch_multiple_graph_responses(authorized_lib, mocker, mocked_responses)
+
+    success = authorized_lib.download_onedrive_file_from_share_link(share_url, TEMP_DIR)
+
+    assert success
+    assert Path(TEMP_DIR / responses[0]["name"]).exists()
