@@ -320,7 +320,7 @@ class MSGraph:
 
         The downloaded file will be saved to a local path.
 
-        :param str file_path: The file path of the source file
+        :param str file_path: The file path of the source file.
         :param str target_directory: Destination of the downloaded file,
                 defaults to current directory.
         :param str resource: Name of the resource if not using default.
@@ -591,3 +591,37 @@ class MSGraph:
         sp_drive = self._get_sharepoint_drive(site, drive_id)
 
         return sp_drive.get_items()
+
+    @keyword
+    def download_file_from_sharepoint(
+        self,
+        file_path: str,
+        site: sharepoint.Site,
+        target_directory: Optional[str] = None,
+        drive_id: Optional[str] = None,
+    ):
+        # pylint: disable=anomalous-backslash-in-string
+        """Downloads file from SharePoint.
+
+        The downloaded file will be saved to a local folder.
+
+        :param str file_path: The file path of the source file.
+        :param Site site: Site instance obtained from \`Get Sharepoint Site\`.
+        :param str target_directory: Destination of the downloaded file,
+                defaults to current directory.
+        :param str drive_id: Drive ID if not using default.
+
+        .. code-block: robotframework
+
+            *** Tasks ***
+            Download file
+                ${success}=    Download File From Sharepoint
+                ...    /path/to/sharepoint/file
+                ...    ${site}
+                ...    /path/to/local/folder
+        """  # noqa: W605
+        self._require_authentication()
+        sp_drive = self._get_sharepoint_drive(site, drive_id)
+        file = sp_drive.get_item_by_path(file_path)
+
+        return file.download(to_path=target_directory)
