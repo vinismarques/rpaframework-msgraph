@@ -668,3 +668,27 @@ def test_list_sharepoint_drives(
     for sp_drive in sp_drives:
         assert sp_drive.object_id in [drive["id"] for drive in response["value"]]
         assert sp_drive.name in [drive["name"] for drive in response["value"]]
+
+
+def test_list_files_in_sharepoint_drive(
+    authorized_lib: MSGraph,
+    mocker: MockerFixture,
+    sharepoint_site: Site,
+) -> None:
+    drive_id = None
+    response = {
+        "value": [
+            {"name": "myfile.jpg", "size": 2048, "file": {}},
+            {"name": "Documents", "folder": {"childCount": 4}},
+            {"name": "Photos", "folder": {"childCount": 203}},
+            {"name": "my sheet(1).xlsx", "size": 197},
+        ],
+    }
+    _patch_graph_response(authorized_lib, mocker, response)
+
+    sp_files = authorized_lib.list_files_in_sharepoint_site_drive(
+        sharepoint_site, drive_id
+    )
+
+    for file in sp_files:
+        assert file.name in [file["name"] for file in response["value"]]
