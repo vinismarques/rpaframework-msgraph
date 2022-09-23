@@ -6,6 +6,7 @@ from mock import MagicMock, ANY
 import pytest
 from pytest_mock import MockerFixture
 from RPA.MSGraph import MSGraph, DEFAULT_REDIRECT_URI, PermissionBundle
+from O365.sharepoint import Site
 from pathlib import Path
 import re
 
@@ -51,6 +52,22 @@ def authorized_lib(
     _patch_token_response(configured_lib, mocker, 1)
     configured_lib.authorize_and_get_token(_get_stateful_mock_auth_code(init_auth))
     return configured_lib
+
+
+@pytest.fixture
+def sharepoint_site(authorized_lib: MSGraph, mocker: MockerFixture) -> Site:
+    site_id = "contoso.sharepoint.com"
+    response = {
+        "id": "contoso.sharepoint.com,2C712604-1370-44E7-A1F5-426573FDA80A,2D2244C3-251A-49EA-93A8-39E1C3A060FE",
+        "displayName": "OneDrive Team Site",
+        "name": "1drvteam",
+        "createdDateTime": "2017-05-09T20:56:00Z",
+        "lastModifiedDateTime": "2017-05-09T20:56:01Z",
+        "webUrl": "https://contoso.sharepoint.com/teams/1drvteam",
+    }
+    _patch_graph_response(authorized_lib, mocker, response)
+
+    return authorized_lib.get_sharepoint_site(site_id)
 
 
 def _patch_token_response(
@@ -544,3 +561,24 @@ def test_get_sharepoint_site(
 
     assert site.display_name == response["displayName"]
     assert site.object_id == response["id"]
+
+
+def test_get_sharepoint_list(
+    authorized_lib: MSGraph, mocker: MockerFixture, sharepoint_site: Site
+) -> None:
+    list_name = "Documents"
+    response = {
+        "id": "b57af081-936c-4803-a120-d94887b03864",
+        "name": "Documents",
+        "createdDateTime": "2016-08-30T08:32:00Z",
+        "lastModifiedDateTime": "2016-08-30T08:32:00Z",
+        "list": {"hidden": False, "template": "documentLibrary"},
+    }
+    _patch_graph_response(authorized_lib, mocker, response)
+
+    sp_list = authorized_lib.get_sharepoint_list(list_name, sharepoint_site)
+
+    assert sp_list.object_id == response["id"]
+    assert sp_list.name == list_name
+    assert sp_list.hidden == response["list"]["hidden"]
+
