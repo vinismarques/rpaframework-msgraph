@@ -503,3 +503,31 @@ class MSGraph:
         self._require_authentication()
 
         return site.get_list_by_name(list_name)
+
+    @keyword
+    def create_sharepoint_list(
+        self,
+        list_data: dict,
+        site: sharepoint.Site,
+    ) -> sharepoint.SharepointList:
+        # pylint: disable=anomalous-backslash-in-string
+        """Creates a sharepoint list and returns the instance.
+
+        :param dict list_data: A dict with the data for the new list.
+        :param Site site: Site instance obtained from \`Get Sharepoint Site\`.
+
+        List objects have additional properties that can be accessed
+        with dot-notation, see \`Get Sharepoint List\` for additional details.
+
+        .. code-block: robotframework
+
+            *** Tasks ***
+            Create list
+                ${sharepoint_list}=    Create Sharepoint List
+                ...    ${list_data}
+                ...    ${site}
+
+        """  # noqa: W605
+        self._require_authentication()
+
+        return site.create_list(list_data)
