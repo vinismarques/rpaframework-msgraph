@@ -404,3 +404,32 @@ class MSGraph:
         )
 
         return file.download(to_path=target_directory)
+
+    @keyword
+    def upload_file_to_onedrive(
+        self,
+        file_path: str,
+        folder_path: str,
+        resource: Optional[str] = None,
+        drive_id: Optional[str] = None,
+    ) -> drive.DriveItem:
+        # pylint: disable=anomalous-backslash-in-string
+        """Uploads a file to the specified OneDrive folder.
+
+        :param str file_path: Path of the local file being uploaded.
+        :param str folder_path: Path of the folder in OneDrive.
+        :param str resource: Name of the resource if not using default.
+        :param str drive_id: Drive ID if not using default.
+
+        .. code-block: robotframework
+
+            *** Tasks ***
+            Upload file
+                ${files}=    Upload File To Onedrive
+                ...    /path/to/file.txt
+                ...    /path/to/folder
+        """  # noqa: W605
+        self._require_authentication()
+        drive = self._get_drive_instance(resource, drive_id)
+        folder = drive.get_item_by_path(folder_path)
+        return folder.upload_file(item=file_path)
