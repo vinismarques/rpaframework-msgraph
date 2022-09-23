@@ -619,3 +619,52 @@ def test_create_sharepoint_list(
     assert (
         sp_list.created_by.display_name == response["createdBy"]["user"]["displayName"]
     )
+
+
+def test_list_sharepoint_drives(
+    authorized_lib: MSGraph, mocker: MockerFixture, sharepoint_site: Site
+) -> None:
+    response = {
+        "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#drives",
+        "value": [
+            {
+                "createdDateTime": "2017-07-27T02:41:36Z",
+                "description": "",
+                "id": "b!-RIj2DuyvEyV1T4NlOaMHk8XkS_I8MdFlUCq1BlcjgmhRfAj3-Z8RY2VpuvV_tpd",
+                "lastModifiedDateTime": "2018-03-27T07:34:38Z",
+                "name": "OneDrive",
+                "webUrl": "https://m365x214355-my.sharepoint.com/personal/meganb_m365x214355_onmicrosoft_com/Documents",
+                "driveType": "business",
+                "createdBy": {"user": {"displayName": "System Account"}},
+                "lastModifiedBy": {
+                    "user": {
+                        "email": "MeganB@M365x214355.onmicrosoft.com",
+                        "id": "48d31887-5fad-4d73-a9f5-3c356e68a038",
+                        "displayName": "Megan Bowen",
+                    }
+                },
+                "owner": {
+                    "user": {
+                        "email": "MeganB@M365x214355.onmicrosoft.com",
+                        "id": "48d31887-5fad-4d73-a9f5-3c356e68a038",
+                        "displayName": "Megan Bowen",
+                    }
+                },
+                "quota": {
+                    "deleted": 0,
+                    "remaining": 1099217021300,
+                    "state": "normal",
+                    "total": 1099511627776,
+                    "used": 294606476,
+                },
+            }
+        ],
+    }
+    _patch_graph_response(authorized_lib, mocker, response)
+
+    sp_drives = authorized_lib.list_sharepoint_site_drives(sharepoint_site)
+
+    assert sp_drives
+    for sp_drive in sp_drives:
+        assert sp_drive.object_id in [drive["id"] for drive in response["value"]]
+        assert sp_drive.name in [drive["name"] for drive in response["value"]]
