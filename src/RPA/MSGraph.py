@@ -11,7 +11,7 @@ from O365 import (
     sharepoint,
 )
 from O365.utils import Token, BaseTokenBackend
-from O365.utils.utils import (
+from O365.utils.utils import (  # noqa: F401
     ME_RESOURCE,
     USERS_RESOURCE,
     GROUPS_RESOURCE,
@@ -72,7 +72,7 @@ class MSGraph:
     .. _Microsoft Graph permissions reference: https://docs.microsoft.com/en-us/graph/permissions-reference
 
 
-    """
+    """  # noqa: E501
 
     ROBOT_LIBRARY_SCOPE = "Global"
     ROBOT_LIBRARY_DOC_FORMAT = "REST"
@@ -224,7 +224,8 @@ class MSGraph:
             return self._get_refresh_token()
         else:
             raise MSGraphAuthenticationError(
-                f"Authentication not successful using '{authorization_url}' as auth URL."
+                f"""Authentication not successful using
+                 '{authorization_url}' as auth URL."""
             )
 
     @keyword
