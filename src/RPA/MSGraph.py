@@ -11,7 +11,7 @@ from O365 import (
     sharepoint,
 )
 from O365.utils import Token, BaseTokenBackend
-from O365.utils.utils import (
+from O365.utils.utils import (  # noqa: F401
     ME_RESOURCE,
     USERS_RESOURCE,
     GROUPS_RESOURCE,
@@ -72,7 +72,7 @@ class MSGraph:
     .. _Microsoft Graph permissions reference: https://docs.microsoft.com/en-us/graph/permissions-reference
 
 
-    """
+    """  # noqa: E501
 
     ROBOT_LIBRARY_SCOPE = "Global"
     ROBOT_LIBRARY_DOC_FORMAT = "REST"
@@ -224,7 +224,8 @@ class MSGraph:
             return self._get_refresh_token()
         else:
             raise MSGraphAuthenticationError(
-                f"Authentication not successful using '{authorization_url}' as auth URL."
+                f"""Authentication not successful using
+                 '{authorization_url}' as auth URL."""
             )
 
     @keyword
@@ -292,6 +293,7 @@ class MSGraph:
         :param str folder_path: Path of the folder in OneDrive.
         :param str resource: Name of the resource if not using default.
         :param str drive_id: Drive ID if not using default.
+        :return: List of DriveItems in the folder.
 
         .. code-block: robotframework
 
@@ -320,11 +322,12 @@ class MSGraph:
 
         The downloaded file will be saved to a local path.
 
-        :param str file_path: The file path of the source file
+        :param str file_path: The file path of the source file.
         :param str target_directory: Destination of the downloaded file,
                 defaults to current directory.
         :param str resource: Name of the resource if not using default.
         :param str drive_id: Drive ID if not using default.
+        :return: Boolean indicating if download was successful.
 
         .. code-block: robotframework
 
@@ -356,6 +359,7 @@ class MSGraph:
         :param str search_string: String used to search for file in OneDrive.
         :param str resource: Name of the resource if not using default.
         :param str drive_id: Drive ID if not using default.
+        :return: List of DriveItems found based on the search string.
 
         .. code-block: robotframework
 
@@ -469,6 +473,7 @@ class MSGraph:
          (host_name, site_collection_id, site_id).
 
         :param str resource: Name of the resource if not using default.
+        :return: SharePoint Site instance.
 
         The return is of type Site and it has additional properties
         that can be accessed with dot-notation.
@@ -496,6 +501,7 @@ class MSGraph:
 
         :param str list_name: Display name of the SharePoint list.
         :param Site site: Site instance obtained from \`Get Sharepoint Site\`.
+        :return: SharePoint List found based on the provided list name.
 
         .. code-block: robotframework
 
@@ -522,6 +528,7 @@ class MSGraph:
 
         :param dict list_data: A dict with the data for the new list.
         :param Site site: Site instance obtained from \`Get Sharepoint Site\`.
+        :return: SharePoint List that was created.
 
         List objects have additional properties that can be accessed
         with dot-notation, see \`Get Sharepoint List\` for additional details.
@@ -545,6 +552,7 @@ class MSGraph:
         """Get a list of Drives available in the SharePoint Site.
 
         :param Site site: Site instance obtained from \`Get Sharepoint Site\`.
+        :return: A list of Drives present in the SharePoint Site.
 
         .. code-block: robotframework
 
@@ -563,7 +571,7 @@ class MSGraph:
     @keyword
     def list_files_in_sharepoint_site_drive(
         self, site: sharepoint.Site, drive_id: Optional[str] = None
-    ) -> drive.DriveItem:
+    ) -> list[drive.DriveItem]:
         # pylint: disable=anomalous-backslash-in-string
         """List files in the SharePoint Site drive.
 
@@ -576,6 +584,7 @@ class MSGraph:
 
         :param Site site: Site instance obtained from \`Get Sharepoint Site\`.
         :param str drive_id: The id of the desired drive.
+        :return: The list of DriveItems present in the Site Drive.
 
         .. code-block: robotframework
 
@@ -591,3 +600,38 @@ class MSGraph:
         sp_drive = self._get_sharepoint_drive(site, drive_id)
 
         return sp_drive.get_items()
+
+    @keyword
+    def download_file_from_sharepoint(
+        self,
+        file_path: str,
+        site: sharepoint.Site,
+        target_directory: Optional[str] = None,
+        drive_id: Optional[str] = None,
+    ) -> bool:
+        # pylint: disable=anomalous-backslash-in-string
+        """Downloads file from SharePoint.
+
+        The downloaded file will be saved to a local folder.
+
+        :param str file_path: The file path of the source file.
+        :param Site site: Site instance obtained from \`Get Sharepoint Site\`.
+        :param str target_directory: Destination of the downloaded file,
+                defaults to current directory.
+        :param str drive_id: Drive ID if not using default.
+        :return: Boolean indicating if download was successful.
+
+        .. code-block: robotframework
+
+            *** Tasks ***
+            Download file
+                ${success}=    Download File From Sharepoint
+                ...    /path/to/sharepoint/file
+                ...    ${site}
+                ...    /path/to/local/folder
+        """  # noqa: W605
+        self._require_authentication()
+        sp_drive = self._get_sharepoint_drive(site, drive_id)
+        file = sp_drive.get_item_by_path(file_path)
+
+        return file.download(to_path=target_directory)

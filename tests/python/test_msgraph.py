@@ -692,3 +692,49 @@ def test_list_files_in_sharepoint_drive(
 
     for file in sp_files:
         assert file.name in [file["name"] for file in response["value"]]
+
+
+@pytest.mark.parametrize(
+    "file_path, target_directory, drive_id, responses",
+    [
+        (
+            "/Path/To/File",
+            TEMP_DIR,
+            None,
+            [
+                {
+                    "name": "file-from-sharepoint.txt",
+                    "size": 500097,
+                    "id": "3JL14H5L1HJC0PPPQO7EMQB",
+                },
+                "dummy file content".encode(),
+            ],
+        ),
+    ],
+)
+def test_download_file_from_sharepoint(
+    authorized_lib: MSGraph,
+    mocker: MockerFixture,
+    sharepoint_site: Site,
+    drive_id: str,
+    file_path: str,
+    target_directory: str,
+    responses: list[dict],
+) -> None:
+    mocked_responses = []
+    mocked_responses.append(_create_graph_json_response(responses[0]))
+    mocked_response = MagicMock()
+    mocked_response.__enter__.return_value.status_code = 200
+    mocked_response.__enter__.return_value.headers = {
+        "Content-Type": "application/octet-stream"
+    }
+    mocked_response.__enter__.return_value.content = responses[1]
+    mocked_responses.append(mocked_response)
+    _patch_multiple_graph_responses(authorized_lib, mocker, mocked_responses)
+
+    success = authorized_lib.download_file_from_sharepoint(
+        file_path, sharepoint_site, target_directory, drive_id
+    )
+
+    assert success
+    assert Path(TEMP_DIR / responses[0]["name"]).exists()
