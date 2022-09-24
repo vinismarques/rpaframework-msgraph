@@ -418,6 +418,7 @@ class MSGraph:
     ) -> list[drive.DriveItem]:
         # pylint: disable=anomalous-backslash-in-string
         """Returns a list of files found in OneDrive based on the search string.
+        The result can include items that were shared with the user.
 
         The files returned are DriveItem objects and they have additional
         properties that can be accessed with dot-notation, see
