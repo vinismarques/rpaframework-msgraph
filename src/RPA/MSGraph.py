@@ -235,8 +235,7 @@ class MSGraph:
             return self._get_refresh_token()
         else:
             raise MSGraphAuthenticationError(
-                f"""Authentication not successful using
-                 '{authorization_url}' as auth URL."""
+                f"Authentication not successful using '{authorization_url}' as auth URL."  # noqa: E501
             )
 
     @keyword
@@ -315,8 +314,8 @@ class MSGraph:
                 ${file_name}=    Set Variable    ${file.name}
         """
         self._require_authentication()
-        my_drive = self._get_drive_instance(resource, drive_id)
-        folder = my_drive.get_item_by_path(folder_path)
+        drive_instance = self._get_drive_instance(resource, drive_id)
+        folder = drive_instance.get_item_by_path(folder_path)
         items = folder.get_items()
         files = [item for item in items if not item.is_folder]
         return files
@@ -349,9 +348,9 @@ class MSGraph:
                 ...    /path/to/local/folder
         """
         self._require_authentication()
-        my_drive = self._get_drive_instance(resource, drive_id)
-        file = my_drive.get_item_by_path(file_path)
-        return file.download(to_path=target_directory)
+        drive_instance = self._get_drive_instance(resource, drive_id)
+        file_instance = drive_instance.get_item_by_path(file_path)
+        return file_instance.download(to_path=target_directory)
 
     @keyword
     def find_onedrive_file(
@@ -380,8 +379,8 @@ class MSGraph:
                 ${file}=    Get From List    ${files}    0
         """  # noqa: W605
         self._require_authentication()
-        my_drive = self._get_drive_instance(resource, drive_id)
-        items = my_drive.search(search_string)
+        drive_instance = self._get_drive_instance(resource, drive_id)
+        items = drive_instance.search(search_string)
         files = [item for item in items if not item.is_folder]
         return files
 
@@ -429,11 +428,11 @@ class MSGraph:
         data = response.json()
 
         # Everything received from cloud must be passed as self._cloud_data_key
-        file = drive_instance._classifier(data)(
+        file_instance = drive_instance._classifier(data)(
             parent=drive_instance, **{drive_instance._cloud_data_key: data}
         )
 
-        return file.download(to_path=target_directory)
+        return file_instance.download(to_path=target_directory)
 
     @keyword
     def upload_file_to_onedrive(
@@ -460,8 +459,8 @@ class MSGraph:
                 ...    /path/to/folder
         """  # noqa: W605
         self._require_authentication()
-        my_drive = self._get_drive_instance(resource, drive_id)
-        folder = my_drive.get_item_by_path(folder_path)
+        drive_instance = self._get_drive_instance(resource, drive_id)
+        folder = drive_instance.get_item_by_path(folder_path)
         return folder.upload_file(item=file_path)
 
     @keyword
@@ -587,7 +586,7 @@ class MSGraph:
         # pylint: disable=anomalous-backslash-in-string
         """List files in the SharePoint Site drive.
 
-        If the drive_id is not informed, the defaul Document Library will be used.
+        If the drive_id is not informed, the default Document Library will be used.
         The drive_id can be obtained from the keyword \`List Sharepoint Site Drives\`.
 
         The files returned are DriveItem objects and they have additional
@@ -644,6 +643,6 @@ class MSGraph:
         """  # noqa: W605
         self._require_authentication()
         sp_drive = self._get_sharepoint_drive(site, drive_id)
-        file = sp_drive.get_item_by_path(file_path)
+        file_instance = sp_drive.get_item_by_path(file_path)
 
-        return file.download(to_path=target_directory)
+        return file_instance.download(to_path=target_directory)
