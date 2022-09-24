@@ -378,10 +378,10 @@ def test_downloading_file_from_onedrive(
     mocked_responses.append(mocked_response)
     _patch_multiple_graph_responses(authorized_lib, mocker, mocked_responses)
 
-    success = authorized_lib.download_file_from_onedrive(file_path, TEMP_DIR)
+    downloaded_file = authorized_lib.download_file_from_onedrive(file_path, TEMP_DIR)
 
-    assert success
-    assert Path(TEMP_DIR / responses[0]["name"]).exists()
+    assert downloaded_file
+    assert downloaded_file.exists()
 
 
 @pytest.mark.parametrize(
@@ -456,10 +456,12 @@ def test_downloading_from_onedrive_with_link(
     mocked_responses.append(mocked_response)
     _patch_multiple_graph_responses(authorized_lib, mocker, mocked_responses)
 
-    success = authorized_lib.download_onedrive_file_from_share_link(share_url, TEMP_DIR)
+    downloaded_file = authorized_lib.download_onedrive_file_from_share_link(
+        share_url, TEMP_DIR
+    )
 
-    assert success
-    assert Path(TEMP_DIR / responses[0]["name"]).exists()
+    assert downloaded_file
+    assert downloaded_file.exists()
 
 
 @pytest.mark.parametrize(
@@ -732,9 +734,9 @@ def test_download_file_from_sharepoint(
     mocked_responses.append(mocked_response)
     _patch_multiple_graph_responses(authorized_lib, mocker, mocked_responses)
 
-    success = authorized_lib.download_file_from_sharepoint(
+    downloaded_file = authorized_lib.download_file_from_sharepoint(
         file_path, sharepoint_site, target_directory, drive_id
     )
 
-    assert success
-    assert Path(TEMP_DIR / responses[0]["name"]).exists()
+    assert downloaded_file
+    assert downloaded_file.exists()

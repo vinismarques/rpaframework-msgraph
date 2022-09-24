@@ -39,6 +39,10 @@ class MSGraphAuthenticationError(Exception):
     "Error when authentication fails."
 
 
+class MSGraphDownloadError(Exception):
+    "Error when download fails."
+
+
 class RobocorpVaultTokenBackend(BaseTokenBackend):
     "A simple Token backend that saves to Robocorp vault"
 
@@ -164,6 +168,56 @@ class MSGraph:
             .replace("+", "-")
         )
         return "u!{}".format(base64_string)
+
+    def _download_file(
+        self,
+        file_instance: drive.File,
+        to_path: Union[str, Path, None] = None,
+        name: Optional[str] = None,
+    ) -> Path:
+        """Downloads the file and return the destination path.
+        The O365 library returns only a boolean, so it was necessary
+        to define the destination path the same way the library does it.
+        """
+        if not isinstance(file_instance, drive.File):
+            raise MSGraphDownloadError("Drive item is not a file.")
+
+        if to_path is None:
+            to_path = Path()
+        else:
+            if not isinstance(to_path, Path):
+                to_path = Path(to_path)
+
+        if not to_path.exists():
+            raise FileNotFoundError("{} does not exist".format(to_path))
+
+        if name and not Path(name).suffix and file_instance.name:
+            name = name + Path(file_instance.name).suffix
+
+        name = name or file_instance.name
+        downloaded_file = to_path / name
+
+        success = file_instance.download(to_path=to_path, name=name)
+        if not success:
+            raise MSGraphDownloadError("Downloading file failed.")
+
+        return downloaded_file
+
+    def _download_folder(
+        self, folder_instance: drive.Folder, to_folder: Union[str, Path, None] = None
+    ) -> Path:
+        """Downloads the content of the folder recursively.
+        The O365 library returns only a boolean, so it was necessary to define
+        the destination path the same way the O365 library does it.
+        """
+        if not isinstance(folder_instance, drive.Folder):
+            raise MSGraphDownloadError("Drive item is not a folder.")
+        if to_folder is None:
+            downloaded_folder = Path() / folder_instance.name
+        else:
+            downloaded_folder = Path() / to_folder
+        folder_instance.download_contents(to_folder=to_folder)
+        return downloaded_folder
 
     def _get_sharepoint_drive(self, site: sharepoint.Site, drive_id: str = None):
         """Returns the specified SharePoint drive if any or the default one if none."""
@@ -324,17 +378,19 @@ class MSGraph:
     def download_file_from_onedrive(
         self,
         file_path: str,
-        target_directory: Optional[str] = None,
+        target_directory: Union[str, Path, None] = None,
+        name: Optional[str] = None,
         resource: Optional[str] = None,
         drive_id: Optional[str] = None,
-    ) -> bool:
+    ) -> Path:
         """Downloads a file from OneDrive.
 
         The downloaded file will be saved to a local path.
 
         :param str file_path: The file path of the source file.
-        :param str target_directory: Destination of the downloaded file,
-                defaults to current directory.
+        :param str target_directory: Destination folder of the downloaded file,
+                defaults to the current directory.
+        :param str name: New name for the downloaded file.
         :param str resource: Name of the resource if not using default.
         :param str drive_id: Drive ID if not using default.
         :return: Boolean indicating if download was successful.
@@ -343,14 +399,15 @@ class MSGraph:
 
             *** Tasks ***
             Download file
-                ${success}=    Download File From Onedrive
+                ${downloaded_file}=    Download File From Onedrive
                 ...    /path/to/onedrive/file
                 ...    /path/to/local/folder
         """
         self._require_authentication()
         drive_instance = self._get_drive_instance(resource, drive_id)
         file_instance = drive_instance.get_item_by_path(file_path)
-        return file_instance.download(to_path=target_directory)
+        downloaded_file = self._download_file(file_instance, target_directory, name)
+        return downloaded_file
 
     @keyword
     def find_onedrive_file(
@@ -388,18 +445,20 @@ class MSGraph:
     def download_onedrive_file_from_share_link(
         self,
         share_url: str,
-        target_directory: Optional[str] = None,
+        target_directory: Union[str, Path, None] = None,
+        name: Optional[str] = None,
         resource: Optional[str] = None,
         drive_id: Optional[str] = None,
-    ) -> bool:
+    ) -> Path:
         # pylint: disable=protected-access
         """Downloads file from the specified OneDrive share link.
 
         The downloaded file will be saved to a local path.
 
         :param str share_url: The URL of the shared file
-        :param str target_directory: Destination of the downloaded file,
-                defaults to current directory.
+        :param str target_directory: Destination folder of the downloaded file,
+                defaults to the current directory.
+        :param str name: New name for the downloaded file.
         :param str resource: Name of the resource if not using default.
         :param str drive_id: Drive ID if not using default.
 
@@ -407,7 +466,7 @@ class MSGraph:
 
             *** Tasks ***
             Download file
-                ${success}=    Download Onedrive File From Share Link
+                ${downloaded_file}=    Download Onedrive File From Share Link
                 ...    https://...
                 ...    /path/to/local/folder
         """
@@ -432,7 +491,8 @@ class MSGraph:
             parent=drive_instance, **{drive_instance._cloud_data_key: data}
         )
 
-        return file_instance.download(to_path=target_directory)
+        download_path = self._download_file(file_instance, target_directory, name)
+        return download_path
 
     @keyword
     def upload_file_to_onedrive(
@@ -617,9 +677,10 @@ class MSGraph:
         self,
         file_path: str,
         site: sharepoint.Site,
-        target_directory: Optional[str] = None,
+        target_directory: Union[str, Path, None] = None,
+        name: Optional[str] = None,
         drive_id: Optional[str] = None,
-    ) -> bool:
+    ) -> Path:
         # pylint: disable=anomalous-backslash-in-string
         """Downloads file from SharePoint.
 
@@ -627,8 +688,9 @@ class MSGraph:
 
         :param str file_path: The file path of the source file.
         :param Site site: Site instance obtained from \`Get Sharepoint Site\`.
-        :param str target_directory: Destination of the downloaded file,
-                defaults to current directory.
+        :param str target_directory: Destination folder of the downloaded file,
+                defaults to the current directory.
+        :param str name: New name for the downloaded file.
         :param str drive_id: Drive ID if not using default.
         :return: Boolean indicating if download was successful.
 
@@ -636,7 +698,7 @@ class MSGraph:
 
             *** Tasks ***
             Download file
-                ${success}=    Download File From Sharepoint
+                ${downloaded_file}=    Download File From Sharepoint
                 ...    /path/to/sharepoint/file
                 ...    ${site}
                 ...    /path/to/local/folder
@@ -645,4 +707,5 @@ class MSGraph:
         sp_drive = self._get_sharepoint_drive(site, drive_id)
         file_instance = sp_drive.get_item_by_path(file_path)
 
-        return file_instance.download(to_path=target_directory)
+        download_path = self._download_file(file_instance, target_directory, name)
+        return download_path
