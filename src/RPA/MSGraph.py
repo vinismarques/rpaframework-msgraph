@@ -96,8 +96,8 @@ class MSGraph:
         """When importing the library to Robot Framework, you can set the
         ``client_id`` and ``client_secret``.
 
-        :param str client_id: Application client id.
-        :param str client_secret: Application client secret.
+        :param client_id: Application client id.
+        :param client_secret: Application client secret.
 
         """
         self.logger = logging.getLogger(__name__)
@@ -354,9 +354,9 @@ class MSGraph:
         The files returned are DriveItem objects and they have additional
         properties that can be accessed with dot-notation.
 
-        :param str folder_path: Path of the folder in OneDrive.
-        :param str resource: Name of the resource if not using default.
-        :param str drive_id: Drive ID if not using default.
+        :param folder_path: Path of the folder in OneDrive.
+        :param resource: Name of the resource if not using default.
+        :param drive_id: Drive ID if not using default.
         :return: List of DriveItems in the folder.
 
         .. code-block: robotframework
@@ -387,12 +387,12 @@ class MSGraph:
 
         The downloaded file will be saved to a local path.
 
-        :param str file_path: The file path of the source file.
-        :param str target_directory: Destination folder of the downloaded file,
+        :param file_path: File path of the source file.
+        :param target_directory: Destination folder of the downloaded file,
                 defaults to the current directory.
-        :param str name: New name for the downloaded file.
-        :param str resource: Name of the resource if not using default.
-        :param str drive_id: Drive ID if not using default.
+        :param name: New name for the downloaded file.
+        :param resource: Name of the resource if not using default.
+        :param drive_id: Drive ID if not using default.
         :return: Boolean indicating if download was successful.
 
         .. code-block: robotframework
@@ -424,9 +424,9 @@ class MSGraph:
         properties that can be accessed with dot-notation, see
         \`List Files In Onedrive Folder\` for details.
 
-        :param str search_string: String used to search for file in OneDrive.
-        :param str resource: Name of the resource if not using default.
-        :param str drive_id: Drive ID if not using default.
+        :param search_string: String used to search for file in OneDrive.
+        :param resource: Name of the resource if not using default.
+        :param drive_id: Drive ID if not using default.
         :return: List of DriveItems found based on the search string.
 
         .. code-block: robotframework
@@ -456,12 +456,12 @@ class MSGraph:
 
         The downloaded file will be saved to a local path.
 
-        :param str share_url: The URL of the shared file
-        :param str target_directory: Destination folder of the downloaded file,
+        :param share_url: URL of the shared file
+        :param target_directory: Destination folder of the downloaded file,
                 defaults to the current directory.
-        :param str name: New name for the downloaded file.
-        :param str resource: Name of the resource if not using default.
-        :param str drive_id: Drive ID if not using default.
+        :param name: New name for the downloaded file.
+        :param resource: Name of the resource if not using default.
+        :param drive_id: Drive ID if not using default.
 
         .. code-block: robotframework
 
@@ -506,10 +506,10 @@ class MSGraph:
         # pylint: disable=anomalous-backslash-in-string
         """Uploads a file to the specified OneDrive folder.
 
-        :param str file_path: Path of the local file being uploaded.
-        :param str folder_path: Path of the folder in OneDrive.
-        :param str resource: Name of the resource if not using default.
-        :param str drive_id: Drive ID if not using default.
+        :param file_path: Path of the local file being uploaded.
+        :param folder_path: Path of the folder in OneDrive.
+        :param resource: Name of the resource if not using default.
+        :param drive_id: Drive ID if not using default.
 
         .. code-block: robotframework
 
@@ -544,7 +544,7 @@ class MSGraph:
          get_site(host_name, site_collection_id, site_id): a collection of
          (host_name, site_collection_id, site_id).
 
-        :param str resource: Name of the resource if not using default.
+        :param resource: Name of the resource if not using default.
         :return: SharePoint Site instance.
 
         The return is of type Site and it has additional properties
@@ -571,8 +571,8 @@ class MSGraph:
         # pylint: disable=anomalous-backslash-in-string
         """Returns a sharepoint list based on the display name of the list.
 
-        :param str list_name: Display name of the SharePoint list.
-        :param Site site: Site instance obtained from \`Get Sharepoint Site\`.
+        :param list_name: Display name of the SharePoint list.
+        :param site: Site instance obtained from \`Get Sharepoint Site\`.
         :return: SharePoint List found based on the provided list name.
 
         .. code-block: robotframework
@@ -598,8 +598,8 @@ class MSGraph:
         # pylint: disable=anomalous-backslash-in-string
         """Creates a sharepoint list and returns the instance.
 
-        :param dict list_data: A dict with the data for the new list.
-        :param Site site: Site instance obtained from \`Get Sharepoint Site\`.
+        :param list_data: Dictionary with the data for the new list.
+        :param site: Site instance obtained from \`Get Sharepoint Site\`.
         :return: SharePoint List that was created.
 
         List objects have additional properties that can be accessed
@@ -623,8 +623,8 @@ class MSGraph:
         # pylint: disable=anomalous-backslash-in-string
         """Get a list of Drives available in the SharePoint Site.
 
-        :param Site site: Site instance obtained from \`Get Sharepoint Site\`.
-        :return: A list of Drives present in the SharePoint Site.
+        :param site: Site instance obtained from \`Get Sharepoint Site\`.
+        :return: List of Drives present in the SharePoint Site.
 
         .. code-block: robotframework
 
@@ -654,9 +654,9 @@ class MSGraph:
         properties that can be accessed with dot-notation, see
         \`List Files In Onedrive Folder\` for details.
 
-        :param Site site: Site instance obtained from \`Get Sharepoint Site\`.
-        :param str drive_id: The id of the desired drive.
-        :return: The list of DriveItems present in the Site Drive.
+        :param site: Site instance obtained from \`Get Sharepoint Site\`.
+        :param drive_id: ID of the desired drive.
+        :return: List of DriveItems present in the Site Drive.
 
         .. code-block: robotframework
 
@@ -687,12 +687,12 @@ class MSGraph:
 
         The downloaded file will be saved to a local folder.
 
-        :param str file_path: The file path of the source file.
-        :param Site site: Site instance obtained from \`Get Sharepoint Site\`.
-        :param str target_directory: Destination folder of the downloaded file,
+        :param file_path: File path of the source file.
+        :param site: Site instance obtained from \`Get Sharepoint Site\`.
+        :param target_directory: Destination folder of the downloaded file,
                 defaults to the current directory.
-        :param str name: New name for the downloaded file.
-        :param str drive_id: Drive ID if not using default.
+        :param name: New name for the downloaded file.
+        :param drive_id: Drive ID if not using default.
         :return: Boolean indicating if download was successful.
 
         .. code-block: robotframework
