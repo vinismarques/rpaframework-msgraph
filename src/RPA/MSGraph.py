@@ -1,7 +1,8 @@
 import base64
 from enum import Enum
 import logging
-from typing import Optional, Union
+import importlib
+from typing import Dict, Optional, Union
 from pathlib import Path
 from O365 import (
     Account,
@@ -27,6 +28,20 @@ DEFAULT_TOKEN_PATH = Path("/temp")
 # Define scopes
 DEFAULT_PROTOCOL = MSGraphProtocol()
 BASIC_SCOPE = DEFAULT_PROTOCOL.get_scopes_for("basic")
+
+
+def import_tables():
+    """Try to import Tables library"""
+    try:
+        module = importlib.import_module("RPA.Tables")
+        return getattr(module, "Tables")
+    except ModuleNotFoundError:
+        return None
+
+
+DataTable = (
+    getattr(importlib.import_module("RPA.Tables"), "Table") if import_tables() else Dict
+)
 
 
 class PermissionBundle(Enum):
@@ -225,6 +240,20 @@ class MSGraph:
             return site.get_document_library(drive_id)
         else:
             return site.get_default_document_library()
+
+    def _sharepoint_items_into_dict_list(
+        self, items_instance: list[sharepoint.SharepointListItem]
+    ) -> list[dict]:
+        """Turns a list of SharePointListItem into a list of dictionaries.
+        This improves the Robot Developer experience, since the inspection
+        of attributes isn't easy in Robot Framework.
+        """
+        items_list = []
+        for item in items_instance:
+            item_dict = {"object_id": item.object_id}
+            item_dict.update(item.fields)
+            items_list.append(item_dict)
+        return items_list
 
     @keyword
     def configure_msgraph_client(
@@ -571,27 +600,38 @@ class MSGraph:
         self,
         list_name: str,
         site: sharepoint.Site,
-    ) -> sharepoint.SharepointList:
+    ) -> DataTable:
         # pylint: disable=anomalous-backslash-in-string
-        """Returns a sharepoint list based on the display name of the list.
+        """Returns the items on a SharePoint list. The list is found
+        by it's display name.
+
+        This keyword tries to return the SharePoint list it as a table
+        (see ``RPA.Tables``), if ``RPA.Tables`` is not available in the
+        keyword's scope, the data will be returned as a list of dictionaries.
 
         :param list_name: Display name of the SharePoint list.
         :param site: Site instance obtained from \`Get Sharepoint Site\`.
-        :return: SharePoint List found based on the provided list name.
+        :return: Table or list of dicts of the items.
 
         .. code-block: robotframework
 
             *** Tasks ***
             Get List
-                ${sharepoint_list}=    Get Sharepoint List    My List    ${site}
-                ${list_name}=    Set Variable    ${list.name}
-                ${description}=    Set Variable    ${list.description}
-                ${id}=    Set Variable    ${list.object_id}
-                ${creator_name}=    Set Variable    ${list.created_by.display_name}
+                ${items}=    Get Sharepoint List    My List    ${site}
+                ${table}=    Create Table    ${items}
         """  # noqa: W605
         self._require_authentication()
+        sp_list = site.get_list_by_name(list_name)
+        sp_items = sp_list.get_items()
+        items = self._sharepoint_items_into_dict_list(sp_items)
 
-        return site.get_list_by_name(list_name)
+        tables = import_tables()
+        if not tables:
+            self.logger.info(
+                "Tables in the response will be in a `dictionary` type, "
+                "because `RPA.Tables` library is not available in the scope."
+            )
+        return tables().create_table(items) if tables else items
 
     @keyword
     def create_sharepoint_list(

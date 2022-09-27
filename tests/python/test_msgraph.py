@@ -569,20 +569,90 @@ def test_get_sharepoint_list(
     authorized_lib: MSGraph, mocker: MockerFixture, sharepoint_site: Site
 ) -> None:
     list_name = "Documents"
-    response = {
+    list_response = {
         "id": "b57af081-936c-4803-a120-d94887b03864",
         "name": "Documents",
         "createdDateTime": "2016-08-30T08:32:00Z",
         "lastModifiedDateTime": "2016-08-30T08:32:00Z",
         "list": {"hidden": False, "template": "documentLibrary"},
     }
-    _patch_graph_response(authorized_lib, mocker, response)
+    columns_response = {
+        "value": [
+            {
+                "description": "",
+                "displayName": "Name",
+                "hidden": False,
+                "id": "99ddcf45-e2f7-4f17-82b0-6fba34445103",
+                "indexed": False,
+                "name": "Name",
+                "readOnly": False,
+                "required": False,
+                "text": {
+                    "allowMultipleLines": False,
+                    "appendChangesToExistingText": False,
+                    "linesForEditing": 0,
+                    "maxLength": 255,
+                },
+            },
+            {
+                "description": "",
+                "displayName": "Color",
+                "id": "11dfef35-e2f7-4f17-82b0-6fba34445103",
+                "indexed": False,
+                "name": "Color",
+                "readOnly": False,
+                "required": False,
+                "text": {
+                    "allowMultipleLines": False,
+                    "appendChangesToExistingText": False,
+                    "linesForEditing": 0,
+                    "maxLength": 255,
+                },
+            },
+            {
+                "description": "",
+                "displayName": "Quantity",
+                "id": "27c36545-4c19-4af8-a5a1-eaf520dbba25",
+                "indexed": False,
+                "name": "Quantity",
+                "readOnly": False,
+                "required": False,
+                "text": {
+                    "allowMultipleLines": False,
+                    "appendChangesToExistingText": False,
+                    "linesForEditing": 0,
+                    "maxLength": 255,
+                },
+            },
+        ]
+    }
+    list_items_response = {
+        "value": [
+            {
+                "id": "2",
+                "fields": {"Name": "Gadget", "Color": "Red", "Quantity": 503},
+            },
+            {
+                "id": "4",
+                "fields": {"Name": "Widget", "Color": "Blue", "Quantity": 2357},
+            },
+            {
+                "id": "7",
+                "fields": {"Name": "Gizmo", "Color": "Green", "Quantity": 92},
+            },
+        ]
+    }
+    mocked_responses = [
+        _create_graph_json_response(r)
+        for r in (list_response, columns_response, list_items_response)
+    ]
+    _patch_multiple_graph_responses(authorized_lib, mocker, mocked_responses)
 
-    sp_list = authorized_lib.get_sharepoint_list(list_name, sharepoint_site)
+    items_list = authorized_lib.get_sharepoint_list(list_name, sharepoint_site)
 
-    assert sp_list.name == list_name
-    assert sp_list.object_id == response["id"]
-    assert sp_list.hidden == response["list"]["hidden"]
+    assert items_list
+    for item in items_list:
+        assert item["object_id"] in [i["id"] for i in list_items_response["value"]]
 
 
 def test_create_sharepoint_list(
