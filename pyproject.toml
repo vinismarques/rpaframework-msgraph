@@ -30,7 +30,7 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^3.9"
-rpaframework-core = "^9.0.0"
+rpaframework-core = "^10.0.0"
 robotframework = ">=4.0.0,!=4.0.1,<6.0.0"
 robotframework-pythonlibcore = "^3.0.0"
 O365 = "<=2.0.17"
@@ -54,6 +54,9 @@ toml = "^0.10.1"
 sphinx-markdown-builder = "^0.5.4"
 robotframework-docgen = "^0.15.0"
 sphinx-issues = "^1.2.0"
+
+[tool.poetry.group.rpaframework.dependencies]
+rpaframework = "^17.0.1"
 
 [tool.pytest.ini_options]
 addopts = "-v --cov=src --cov-branch"
