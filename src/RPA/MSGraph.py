@@ -30,18 +30,17 @@ DEFAULT_PROTOCOL = MSGraphProtocol()
 BASIC_SCOPE = DEFAULT_PROTOCOL.get_scopes_for("basic")
 
 
-def import_tables():
-    """Try to import Tables library"""
+def import_table():
+    """Try to import `RPA.Tables.Table`"""
     try:
         module = importlib.import_module("RPA.Tables")
-        return getattr(module, "Tables")
+        return getattr(module, "Table")
     except ModuleNotFoundError:
         return None
 
 
-DataTable = (
-    getattr(importlib.import_module("RPA.Tables"), "Table") if import_tables() else Dict
-)
+Table = import_table()
+DataTable = Table if Table else list[Dict]
 
 
 class PermissionBundle(Enum):
@@ -625,13 +624,12 @@ class MSGraph:
         sp_items = sp_list.get_items()
         items = self._sharepoint_items_into_dict_list(sp_items)
 
-        tables = import_tables()
-        if not tables:
+        if not Table:
             self.logger.info(
                 "Tables in the response will be in a `dictionary` type, "
                 "because `RPA.Tables` library is not available in the scope."
             )
-        return tables().create_table(items) if tables else items
+        return DataTable(items) if Table else items
 
     @keyword
     def create_sharepoint_list(
