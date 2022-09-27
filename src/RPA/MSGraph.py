@@ -526,7 +526,7 @@ class MSGraph:
 
     @keyword
     def get_sharepoint_site(
-        self, *args: tuple[str], resource: Optional[str] = SITES_RESOURCE
+        self, *args: tuple[str], resource: Optional[str] = ""
     ) -> sharepoint.Site:
         """Returns a SharePoint site.
 
@@ -548,14 +548,18 @@ class MSGraph:
         :return: SharePoint Site instance.
 
         The return is of type Site and it has additional properties
-        that can be accessed with dot-notation.
+        that can be accessed with dot-notation. See examples below.
 
         .. code-block: robotframework
 
             *** Tasks ***
             Get site
                 ${site}=    Get Sharepoint Site    contoso.sharepoint.com
-                ${site_name}=    Set Variable    ${site.display_name}
+                ${name}=    Set Variable    ${site.name}
+                ${display_name}=    Set Variable    ${site.display_name}
+                ${description}=    Set Variable    ${site.description}
+                ${url}=    Set Variable    ${site.web_url}
+                ${id}=    Set Variable    ${site.object_id}
         """
         self._require_authentication()
         sp = self.client.sharepoint(resource=resource)
