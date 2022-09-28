@@ -443,7 +443,7 @@ def test_finding_onedrive_file(
         )
     ],
 )
-def test_downloading_from_onedrive_with_link(
+def test_downloading_from_share_link(
     authorized_lib: MSGraph,
     mocker: MockerFixture,
     share_url: str,
@@ -460,9 +460,7 @@ def test_downloading_from_onedrive_with_link(
     mocked_responses.append(mocked_response)
     _patch_multiple_graph_responses(authorized_lib, mocker, mocked_responses)
 
-    downloaded_file = authorized_lib.download_onedrive_file_from_share_link(
-        share_url, TEMP_DIR
-    )
+    downloaded_file = authorized_lib.download_file_from_share_link(share_url, TEMP_DIR)
 
     assert downloaded_file
     assert downloaded_file.exists()

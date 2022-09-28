@@ -61,6 +61,23 @@ class RobocorpVaultTokenBackend(BaseTokenBackend):
     "A simple Token backend that saves to Robocorp vault"
 
 
+class SharedItem(drive.File):
+    """Simple class to add support for shared items.
+    Inherits File only to bypass checks in the library.
+    """  # pylint: disable=super-init-not-called
+
+    def __init__(self, data, url, con):
+        self.name = data["name"]
+        self.size = data["size"]
+        self.con = con
+        self.url = url
+        self.object_id = None
+
+    def build_url(self, *args):  # pylint: disable=unused-argument
+        """Discard arguments since we already have the correct URL."""
+        return self.url
+
+
 class MSGraph:
     """
     The *MSGraph* library wraps the `O365 package`_, giving robots
@@ -527,16 +544,13 @@ class MSGraph:
         return [item for item in items if not item.is_folder]
 
     @keyword
-    def download_onedrive_file_from_share_link(
+    def download_file_from_share_link(
         self,
         share_url: str,
         to_path: Union[Path, str, None] = None,
         name: Optional[str] = None,
-        resource: Optional[str] = None,
-        drive_id: Optional[str] = None,
     ) -> Path:
-        # pylint: disable=protected-access
-        """Downloads file from the specified OneDrive share link.
+        """Downloads file from the share link.
 
         The downloaded file will be saved to a local path.
 
@@ -544,20 +558,17 @@ class MSGraph:
         :param to_path: Destination folder of the downloaded file,
                 defaults to the current directory.
         :param name: New name for the downloaded file, with or without extension.
-        :param resource: Name of the resource if not using default.
-        :param drive_id: Drive ID if not using default.
 
         .. code-block: robotframework
 
             *** Tasks ***
             Download file
-                ${download_path}=    Download Onedrive File From Share Link
+                ${download_path}=    Download File From Share Link
                 ...    https://...
                 ...    /path/to/local/folder
                 ...    Report.pdf
         """
         self._require_authentication()
-        drive_instance = self._get_drive_instance(resource, drive_id)
 
         # O365 doesn't support getting items from shared links yet
         base_url = self.client.protocol.service_url
@@ -571,11 +582,7 @@ class MSGraph:
             return None
 
         data = response.json()
-
-        # Everything received from cloud must be passed as self._cloud_data_key
-        file_instance = drive_instance._classifier(data)(
-            parent=drive_instance, **{drive_instance._cloud_data_key: data}
-        )
+        file_instance = SharedItem(data, direct_url, self.client.con)
         return self._download_file(file_instance, to_path, name)
 
     @keyword
