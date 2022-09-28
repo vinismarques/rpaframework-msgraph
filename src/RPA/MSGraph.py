@@ -392,8 +392,19 @@ class MSGraph:
             *** Tasks ***
             List files
                 ${files}=    List Files In Onedrive Folder    /path/to/folder
-                ${file}=    Get From List    ${files}    0
-                ${file_name}=    Set Variable    ${file.name}
+                FOR    ${file}    IN    @{files}
+                    Log    ${file.name}
+                    Log    ${file.extension}
+                    Log    ${file.description}
+                    Log    ${file.created_by}
+                    Log    ${file.created}
+                    Log    ${file.is_file}
+                    Log    ${file.is_image}
+                    Log    ${file.is_photo}
+                    Log    ${file.is_folder}
+                    Log    ${file.size}
+                    Log    ${file.web_url}
+                END
         """
         self._require_authentication()
         drive_instance = self._get_drive_instance(resource, drive_id)
@@ -418,7 +429,7 @@ class MSGraph:
         :param file_path: File path of the source file.
         :param target_directory: Destination folder of the downloaded file,
                 defaults to the current directory.
-        :param name: New name for the downloaded file.
+        :param name: New name for the downloaded file, with or without extension.
         :param resource: Name of the resource if not using default.
         :param drive_id: Drive ID if not using default.
         :return: Boolean indicating if download was successful.
@@ -427,9 +438,10 @@ class MSGraph:
 
             *** Tasks ***
             Download file
-                ${downloaded_file}=    Download File From Onedrive
+                ${download_path}=    Download File From Onedrive
                 ...    /path/to/onedrive/file
                 ...    /path/to/local/folder
+                ...    Report.pdf
         """
         self._require_authentication()
         drive_instance = self._get_drive_instance(resource, drive_id)
@@ -462,7 +474,6 @@ class MSGraph:
             *** Tasks ***
             Find file
                 ${files}=    Find Onedrive File    Report.xlsx
-                ${file}=    Get From List    ${files}    0
         """  # noqa: W605
         self._require_authentication()
         drive_instance = self._get_drive_instance(resource, drive_id)
@@ -487,7 +498,7 @@ class MSGraph:
         :param share_url: URL of the shared file
         :param target_directory: Destination folder of the downloaded file,
                 defaults to the current directory.
-        :param name: New name for the downloaded file.
+        :param name: New name for the downloaded file, with or without extension.
         :param resource: Name of the resource if not using default.
         :param drive_id: Drive ID if not using default.
 
@@ -495,9 +506,10 @@ class MSGraph:
 
             *** Tasks ***
             Download file
-                ${downloaded_file}=    Download Onedrive File From Share Link
+                ${download_path}=    Download Onedrive File From Share Link
                 ...    https://...
                 ...    /path/to/local/folder
+                ...    Report.pdf
         """
         self._require_authentication()
         drive_instance = self._get_drive_instance(resource, drive_id)
@@ -534,6 +546,10 @@ class MSGraph:
         # pylint: disable=anomalous-backslash-in-string
         """Uploads a file to the specified OneDrive folder.
 
+        The uploaded file is returned as a DriveItem object and it has
+        additional properties that can be accessed with dot-notation, see
+        \`List Files In Onedrive Folder\` for details.
+
         :param file_path: Path of the local file being uploaded.
         :param folder_path: Path of the folder in OneDrive.
         :param resource: Name of the resource if not using default.
@@ -543,7 +559,7 @@ class MSGraph:
 
             *** Tasks ***
             Upload file
-                ${files}=    Upload File To Onedrive
+                ${file}=    Upload File To Onedrive
                 ...    /path/to/file.txt
                 ...    /path/to/folder
         """  # noqa: W605
@@ -583,15 +599,14 @@ class MSGraph:
             *** Tasks ***
             Get site
                 ${site}=    Get Sharepoint Site    contoso.sharepoint.com
-                ${name}=    Set Variable    ${site.name}
-                ${display_name}=    Set Variable    ${site.display_name}
-                ${description}=    Set Variable    ${site.description}
-                ${url}=    Set Variable    ${site.web_url}
-                ${id}=    Set Variable    ${site.object_id}
+                Log    ${site.name}
+                Log    ${site.display_name}
+                Log    ${site.description}
+                Log    ${site.web_url}
+                Log    ${site.object_id}
         """
         self._require_authentication()
         sp = self.client.sharepoint(resource=resource)
-
         return sp.get_site(*args)
 
     @keyword
@@ -616,8 +631,7 @@ class MSGraph:
 
             *** Tasks ***
             Get List
-                ${items}=    Get Sharepoint List    My List    ${site}
-                ${table}=    Create Table    ${items}
+                ${table}=    Get Sharepoint List    My List    ${site}
         """  # noqa: W605
         self._require_authentication()
         sp_list = site.get_list_by_name(list_name)
@@ -645,19 +659,26 @@ class MSGraph:
         :return: SharePoint List that was created.
 
         List objects have additional properties that can be accessed
-        with dot-notation, see \`Get Sharepoint List\` for additional details.
+        with dot-notation, see examples below.
 
         .. code-block: robotframework
 
             *** Tasks ***
             Create list
-                ${sharepoint_list}=    Create Sharepoint List
+                ${list}=    Create Sharepoint List
                 ...    ${list_data}
                 ...    ${site}
-
+                Log    ${list.object_id}
+                Log    ${list.name}
+                Log    ${list.display_name}
+                Log    ${list.description}
+                Log    ${list.created_by}
+                Log    ${list.created}
+                Log    ${list.last_modified_by}
+                Log    ${list.modified}
+                Log    ${list.web_url}
         """  # noqa: W605
         self._require_authentication()
-
         return site.create_list(list_data)
 
     @keyword
@@ -675,11 +696,13 @@ class MSGraph:
                 ${drives}    List Sharepoint Site Drives    ${site}
                 FOR    ${drive}    IN    @{drives}
                     Log    ${drive.name}
+                    Log    ${drive.description}
+                    Log    ${drive.owner.display_name}
+                    Log    ${drive.web_url}
                     Log    ${drive.object_id}
                 END
         """  # noqa: W605
         self._require_authentication()
-
         return site.list_document_libraries()
 
     @keyword
@@ -706,13 +729,9 @@ class MSGraph:
 
             List files in SharePoint drive
                 ${files}    List Files In Sharepoint Site Drive    ${site}
-                FOR    ${file}    IN    @{files}
-                    Log    ${file.name}
-                END
         """  # noqa: W605
         self._require_authentication()
         sp_drive = self._get_sharepoint_drive(site, drive_id)
-
         return sp_drive.get_items()
 
     @keyword
@@ -733,7 +752,7 @@ class MSGraph:
         :param site: Site instance obtained from \`Get Sharepoint Site\`.
         :param target_directory: Destination folder of the downloaded file,
                 defaults to the current directory.
-        :param name: New name for the downloaded file.
+        :param name: New name for the downloaded file, with or without extension.
         :param drive_id: Drive ID if not using default.
         :return: Boolean indicating if download was successful.
 
@@ -741,10 +760,11 @@ class MSGraph:
 
             *** Tasks ***
             Download file
-                ${downloaded_file}=    Download File From Sharepoint
+                ${download_path}=    Download File From Sharepoint
                 ...    /path/to/sharepoint/file
                 ...    ${site}
                 ...    /path/to/local/folder
+                ...    Report.pdf
         """  # noqa: W605
         self._require_authentication()
         sp_drive = self._get_sharepoint_drive(site, drive_id)
