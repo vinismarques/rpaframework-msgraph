@@ -678,7 +678,7 @@ class MSGraph:
         """  # noqa: W605
         self._require_authentication()
         sp_list = site.get_list_by_name(list_name)
-        sp_items = sp_list.get_items()
+        sp_items = sp_list.get_items(expand_fields=True)
         items = self._sharepoint_items_into_dict_list(sp_items)
 
         if not Table:
