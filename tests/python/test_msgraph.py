@@ -97,7 +97,7 @@ def _create_graph_json_response(return_value: dict) -> MagicMock:
 
 def _patch_graph_response(
     library: MSGraph, mocker: MockerFixture, return_value: dict
-) -> MockerFixture._Patcher:
+) -> MagicMock:
     mock_graph_response = _create_graph_json_response(return_value)
     config = {"return_value": mock_graph_response}
 
@@ -106,7 +106,7 @@ def _patch_graph_response(
 
 def _patch_multiple_graph_responses(
     library: MSGraph, mocker: MockerFixture, mocked_responses: list[MagicMock]
-) -> MockerFixture._Patcher:
+) -> MagicMock:
     config = {"side_effect": mocked_responses}
 
     return mocker.patch.object(library.client.connection.session, "request", **config)
@@ -189,10 +189,11 @@ def test_get_me(authorized_lib: MSGraph, mocker: MockerFixture) -> None:
         "userPrincipalName": "AdeleV@contoso.onmicrosoft.com",
         "id": "87d349ed-44d7-43e1-9a83-5f2406dee5bd",
     }
-    _patch_graph_response(authorized_lib, mocker, data)
+    m = _patch_graph_response(authorized_lib, mocker, data)
 
     user_me = authorized_lib.get_me()
 
+    m.assert_called_once()
     assert str(user_me) == data["displayName"]
     assert user_me.object_id == data["id"]
 
@@ -273,10 +274,11 @@ def test_get_me(authorized_lib: MSGraph, mocker: MockerFixture) -> None:
 def test_search_for_users(
     authorized_lib: MSGraph, mocker: MockerFixture, search_string: str, response: dict
 ) -> None:
-    _patch_graph_response(authorized_lib, mocker, response)
+    m = _patch_graph_response(authorized_lib, mocker, response)
 
     users = authorized_lib.search_for_users(search_string)
 
+    m.assert_called_once()
     for user in users:
         assert user.display_name in [u["displayName"] for u in response["value"]]
         assert user.user_principal_name in [
@@ -415,9 +417,11 @@ def test_downloading_file_from_onedrive(
 def test_finding_onedrive_file(
     authorized_lib: MSGraph, mocker: MockerFixture, search_string: str, response: dict
 ) -> None:
-    _patch_graph_response(authorized_lib, mocker, response)
+    m = _patch_graph_response(authorized_lib, mocker, response)
 
     items = authorized_lib.find_onedrive_file(search_string)
+
+    m.assert_called_once()
     for item in items:
         assert item.object_id in [i["id"] for i in response["value"]]
         assert item.name in [i["name"] for i in response["value"]]
@@ -554,13 +558,14 @@ def test_get_sharepoint_site(
         "lastModifiedDateTime": "2017-05-09T20:56:01Z",
         "webUrl": "https://contoso.sharepoint.com/teams/1drvteam",
     }
-    _patch_graph_response(authorized_lib, mocker, response)
+    m = _patch_graph_response(authorized_lib, mocker, response)
 
     if isinstance(args, str):
         site = authorized_lib.get_sharepoint_site(args)
     else:
         site = authorized_lib.get_sharepoint_site(*args)
 
+    m.assert_called_once()
     assert site.display_name == response["displayName"]
     assert site.object_id == response["id"]
 
@@ -666,7 +671,7 @@ def test_create_sharepoint_list(
         ],
         "list": {"template": "genericList"},
     }
-    response = {
+    list_response = {
         "id": "22e03ef3-6ef4-424d-a1d3-92a337807c30",
         "createdDateTime": "2017-04-30T01:21:00Z",
         "createdBy": {
@@ -683,13 +688,52 @@ def test_create_sharepoint_list(
             }
         },
     }
-    _patch_graph_response(authorized_lib, mocker, response)
+    columns_response = {
+        "value": [
+            {
+                "description": "",
+                "displayName": "Author",
+                "hidden": False,
+                "id": "99ddcf45-e2f7-4f17-82b0-6fba34445103",
+                "indexed": False,
+                "name": "Author",
+                "readOnly": False,
+                "required": False,
+                "text": {
+                    "allowMultipleLines": False,
+                    "appendChangesToExistingText": False,
+                    "linesForEditing": 0,
+                    "maxLength": 255,
+                },
+            },
+            {
+                "description": "",
+                "displayName": "PageCount",
+                "id": "11dfef35-e2f7-4f17-82b0-6fba34445103",
+                "indexed": False,
+                "name": "PageCount",
+                "readOnly": False,
+                "required": False,
+                "text": {
+                    "allowMultipleLines": False,
+                    "appendChangesToExistingText": False,
+                    "linesForEditing": 0,
+                    "maxLength": 255,
+                },
+            },
+        ]
+    }
+    mocked_responses = [
+        _create_graph_json_response(r) for r in (list_response, columns_response)
+    ]
+    _patch_multiple_graph_responses(authorized_lib, mocker, mocked_responses)
 
     sp_list = authorized_lib.create_sharepoint_list(new_list_data, sharepoint_site)
 
-    assert sp_list.object_id == response["id"]
+    assert sp_list.object_id == list_response["id"]
     assert (
-        sp_list.created_by.display_name == response["createdBy"]["user"]["displayName"]
+        sp_list.created_by.display_name
+        == list_response["createdBy"]["user"]["displayName"]
     )
 
 
@@ -732,10 +776,11 @@ def test_list_sharepoint_drives(
             }
         ],
     }
-    _patch_graph_response(authorized_lib, mocker, response)
+    m = _patch_graph_response(authorized_lib, mocker, response)
 
     sp_drives = authorized_lib.list_sharepoint_site_drives(sharepoint_site)
 
+    m.assert_called_once()
     assert sp_drives
     for sp_drive in sp_drives:
         assert sp_drive.object_id in [drive["id"] for drive in response["value"]]
@@ -748,7 +793,32 @@ def test_list_files_in_sharepoint_drive(
     sharepoint_site: Site,
 ) -> None:
     drive_id = None
-    response = {
+    response_folder = {
+        "createdBy": {
+            "user": {
+                "id": "efee1b77-fb3b-4f65-99d6-274c11914d12",
+                "displayName": "Ryan Gregg",
+            }
+        },
+        "createdDateTime": "2016-03-21T20:01:37Z",
+        "cTag": '"c:{86EB4C8E-D20D-46B9-AD41-23B8868DDA8A},0"',
+        "eTag": '"{86EB4C8E-D20D-46B9-AD41-23B8868DDA8A},1"',
+        "folder": {"childCount": 120},
+        "id": "01NKDM7HMOJTVYMDOSXFDK2QJDXCDI3WUK",
+        "lastModifiedBy": {
+            "user": {
+                "id": "efee1b77-fb3b-4f65-99d6-274c11914d12",
+                "displayName": "Ryan Gregg",
+            }
+        },
+        "lastModifiedDateTime": "2016-03-21T20:01:37Z",
+        "name": "OneDrive",
+        "root": {},
+        "size": 157286400,
+        "webUrl": "https://contoso-my.sharepoint.com/personal/rgregg_contoso_com/Documents",
+    }
+
+    response_files = {
         "value": [
             {"name": "myfile.jpg", "size": 2048, "file": {}},
             {"name": "Documents", "folder": {"childCount": 4}},
@@ -756,14 +826,17 @@ def test_list_files_in_sharepoint_drive(
             {"name": "my sheet(1).xlsx", "size": 197},
         ],
     }
-    _patch_graph_response(authorized_lib, mocker, response)
+    mocked_responses = [
+        _create_graph_json_response(r) for r in (response_folder, response_files)
+    ]
+    _patch_multiple_graph_responses(authorized_lib, mocker, mocked_responses)
 
     sp_files = authorized_lib.list_files_in_sharepoint_site_drive(
-        sharepoint_site, drive_id
+        sharepoint_site, drive_id=drive_id
     )
 
     for file in sp_files:
-        assert file.name in [file["name"] for file in response["value"]]
+        assert file.name in [file["name"] for file in response_files["value"]]
 
 
 @pytest.mark.parametrize(

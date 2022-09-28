@@ -170,6 +170,29 @@ class MSGraph:
         else:
             return storage.get_default_drive()
 
+    def _get_folder_instance(
+        self,
+        drive_instance: drive.Drive,
+        folder: Union[drive.Folder, str, None] = None,
+    ) -> drive.Folder:
+        """Get folder from OneDrive."""
+        if isinstance(folder, drive.Folder):
+            return folder
+        elif folder in [None, "/", "\\", "root", "ROOT", ""]:
+            return drive_instance.get_root_folder()
+        else:
+            return drive_instance.get_item_by_path(folder)
+
+    def _get_file_instance(
+        self, target_file: Union[drive.File, str], drive_instance: drive.Drive
+    ) -> drive.File:
+        if isinstance(target_file, str):
+            return drive_instance.get_item_by_path(target_file)
+        elif isinstance(target_file, drive.File):
+            return drive_instance.get_item(target_file.object_id)
+        else:
+            raise ValueError("Target file is not any of the expected types.")
+
     def _encode_share_url(self, file_url: str) -> str:
         """Encodes the OneDrive file share link to a format supported
         by the Graph API.
@@ -186,7 +209,7 @@ class MSGraph:
     def _download_file(
         self,
         file_instance: drive.File,
-        to_path: Union[str, Path, None] = None,
+        to_path: Union[Path, str, None] = None,
         name: Optional[str] = None,
     ) -> Path:
         """Downloads the file and return the destination path.
@@ -214,11 +237,10 @@ class MSGraph:
         success = file_instance.download(to_path=to_path, name=name)
         if not success:
             raise MSGraphDownloadError("Downloading file failed.")
-
         return downloaded_file
 
     def _download_folder(
-        self, folder_instance: drive.Folder, to_folder: Union[str, Path, None] = None
+        self, folder_instance: drive.Folder, to_folder: Union[Path, str, None] = None
     ) -> Path:
         """Downloads the content of the folder recursively.
         The O365 library returns only a boolean, so it was necessary to define
@@ -233,7 +255,9 @@ class MSGraph:
         folder_instance.download_contents(to_folder=to_folder)
         return downloaded_folder
 
-    def _get_sharepoint_drive(self, site: sharepoint.Site, drive_id: str = None):
+    def _get_sharepoint_drive(
+        self, site: sharepoint.Site, drive_id: str = None
+    ) -> drive.Drive:
         """Returns the specified SharePoint drive if any or the default one if none."""
         if drive_id:
             return site.get_document_library(drive_id)
@@ -373,7 +397,8 @@ class MSGraph:
     @keyword
     def list_files_in_onedrive_folder(
         self,
-        folder_path: str,
+        target_folder: Union[drive.Folder, str, None] = None,
+        include_folders: Optional[bool] = False,
         resource: Optional[str] = None,
         drive_id: Optional[str] = None,
     ) -> list[drive.DriveItem]:
@@ -382,7 +407,8 @@ class MSGraph:
         The files returned are DriveItem objects and they have additional
         properties that can be accessed with dot-notation.
 
-        :param folder_path: Path of the folder in OneDrive.
+        :param target_folder: Path of the folder in OneDrive.
+        :param include_folders: Boolean indicating if should return folders as well.
         :param resource: Name of the resource if not using default.
         :param drive_id: Drive ID if not using default.
         :return: List of DriveItems in the folder.
@@ -408,16 +434,17 @@ class MSGraph:
         """
         self._require_authentication()
         drive_instance = self._get_drive_instance(resource, drive_id)
-        folder = drive_instance.get_item_by_path(folder_path)
+        folder = self._get_folder_instance(drive_instance, target_folder)
         items = folder.get_items()
-        files = [item for item in items if not item.is_folder]
-        return files
+        if include_folders:
+            return items
+        return [item for item in items if not item.is_folder]
 
     @keyword
     def download_file_from_onedrive(
         self,
-        file_path: str,
-        target_directory: Union[str, Path, None] = None,
+        target_file: Union[drive.File, str],
+        to_path: Union[Path, str, None] = None,
         name: Optional[str] = None,
         resource: Optional[str] = None,
         drive_id: Optional[str] = None,
@@ -426,45 +453,58 @@ class MSGraph:
 
         The downloaded file will be saved to a local path.
 
-        :param file_path: File path of the source file.
-        :param target_directory: Destination folder of the downloaded file,
+        :param target_file: `DriveItem` or file path of the desired file.
+        :param to_path: Destination folder of the downloaded file,
                 defaults to the current directory.
         :param name: New name for the downloaded file, with or without extension.
         :param resource: Name of the resource if not using default.
         :param drive_id: Drive ID if not using default.
-        :return: Boolean indicating if download was successful.
+        :return: Path to the downloaded file.
 
         .. code-block: robotframework
 
             *** Tasks ***
-            Download file
+            Download file with path
                 ${download_path}=    Download File From Onedrive
                 ...    /path/to/onedrive/file
+                ...    /path/to/local/folder
+                ...    Report.pdf
+
+            Download file with object
+                ${download_path}=    Download File From Onedrive
+                ...    ${drive_item}
                 ...    /path/to/local/folder
                 ...    Report.pdf
         """
         self._require_authentication()
         drive_instance = self._get_drive_instance(resource, drive_id)
-        file_instance = drive_instance.get_item_by_path(file_path)
-        downloaded_file = self._download_file(file_instance, target_directory, name)
-        return downloaded_file
+        file_instance = self._get_file_instance(target_file, drive_instance)
+        return self._download_file(file_instance, to_path, name)
 
     @keyword
     def find_onedrive_file(
         self,
         search_string: str,
+        target_folder: Union[drive.Folder, str, None] = None,
+        include_folders: Optional[bool] = False,
         resource: Optional[str] = None,
         drive_id: Optional[str] = None,
     ) -> list[drive.DriveItem]:
         # pylint: disable=anomalous-backslash-in-string
         """Returns a list of files found in OneDrive based on the search string.
-        The result can include items that were shared with the user.
+        If a folder is not specified, the search is done in the entire drive and
+        may include items that were shared with the user. It is possible to pass
+        \`root\` as the target folder in order to avoid this behavior.
 
         The files returned are DriveItem objects and they have additional
         properties that can be accessed with dot-notation, see
         \`List Files In Onedrive Folder\` for details.
 
         :param search_string: String used to search for file in OneDrive.
+         Values may be matched across several fields including filename,
+         metadata, and file content.
+        :param target_folder: Folder where to search for files.
+        :param include_folders: Boolean indicating if should return folders as well.
         :param resource: Name of the resource if not using default.
         :param drive_id: Drive ID if not using default.
         :return: List of DriveItems found based on the search string.
@@ -477,15 +517,20 @@ class MSGraph:
         """  # noqa: W605
         self._require_authentication()
         drive_instance = self._get_drive_instance(resource, drive_id)
-        items = drive_instance.search(search_string)
-        files = [item for item in items if not item.is_folder]
-        return files
+        if target_folder:
+            folder = self._get_folder_instance(drive_instance, target_folder)
+            items = folder.search(search_string)
+        else:
+            items = drive_instance.search(search_string)
+        if include_folders:
+            return items
+        return [item for item in items if not item.is_folder]
 
     @keyword
     def download_onedrive_file_from_share_link(
         self,
         share_url: str,
-        target_directory: Union[str, Path, None] = None,
+        to_path: Union[Path, str, None] = None,
         name: Optional[str] = None,
         resource: Optional[str] = None,
         drive_id: Optional[str] = None,
@@ -496,7 +541,7 @@ class MSGraph:
         The downloaded file will be saved to a local path.
 
         :param share_url: URL of the shared file
-        :param target_directory: Destination folder of the downloaded file,
+        :param to_path: Destination folder of the downloaded file,
                 defaults to the current directory.
         :param name: New name for the downloaded file, with or without extension.
         :param resource: Name of the resource if not using default.
@@ -531,15 +576,13 @@ class MSGraph:
         file_instance = drive_instance._classifier(data)(
             parent=drive_instance, **{drive_instance._cloud_data_key: data}
         )
-
-        download_path = self._download_file(file_instance, target_directory, name)
-        return download_path
+        return self._download_file(file_instance, to_path, name)
 
     @keyword
     def upload_file_to_onedrive(
         self,
         file_path: str,
-        folder_path: str,
+        target_folder: Union[drive.Folder, str, None] = None,
         resource: Optional[str] = None,
         drive_id: Optional[str] = None,
     ) -> drive.DriveItem:
@@ -551,7 +594,7 @@ class MSGraph:
         \`List Files In Onedrive Folder\` for details.
 
         :param file_path: Path of the local file being uploaded.
-        :param folder_path: Path of the folder in OneDrive.
+        :param target_folder: Path of the folder in OneDrive.
         :param resource: Name of the resource if not using default.
         :param drive_id: Drive ID if not using default.
 
@@ -565,7 +608,7 @@ class MSGraph:
         """  # noqa: W605
         self._require_authentication()
         drive_instance = self._get_drive_instance(resource, drive_id)
-        folder = drive_instance.get_item_by_path(folder_path)
+        folder = self._get_folder_instance(drive_instance, target_folder)
         return folder.upload_file(item=file_path)
 
     @keyword
@@ -672,6 +715,7 @@ class MSGraph:
                 Log    ${list.name}
                 Log    ${list.display_name}
                 Log    ${list.description}
+                Log    ${list.column_name_cw}
                 Log    ${list.created_by}
                 Log    ${list.created}
                 Log    ${list.last_modified_by}
@@ -707,7 +751,10 @@ class MSGraph:
 
     @keyword
     def list_files_in_sharepoint_site_drive(
-        self, site: sharepoint.Site, drive_id: Optional[str] = None
+        self,
+        site: sharepoint.Site,
+        include_folders: Optional[bool] = False,
+        drive_id: Optional[str] = None,
     ) -> list[drive.DriveItem]:
         # pylint: disable=anomalous-backslash-in-string
         """List files in the SharePoint Site drive.
@@ -720,6 +767,7 @@ class MSGraph:
         \`List Files In Onedrive Folder\` for details.
 
         :param site: Site instance obtained from \`Get Sharepoint Site\`.
+        :param include_folders: Boolean indicating if should return folders as well.
         :param drive_id: ID of the desired drive.
         :return: List of DriveItems present in the Site Drive.
 
@@ -732,14 +780,18 @@ class MSGraph:
         """  # noqa: W605
         self._require_authentication()
         sp_drive = self._get_sharepoint_drive(site, drive_id)
-        return sp_drive.get_items()
+        folder = self._get_folder_instance(sp_drive)
+        items = folder.get_items()
+        if include_folders:
+            return items
+        return [item for item in items if not item.is_folder]
 
     @keyword
     def download_file_from_sharepoint(
         self,
-        file_path: str,
+        target_file: Union[drive.File, str],
         site: sharepoint.Site,
-        target_directory: Union[str, Path, None] = None,
+        to_path: Union[Path, str, None] = None,
         name: Optional[str] = None,
         drive_id: Optional[str] = None,
     ) -> Path:
@@ -748,13 +800,13 @@ class MSGraph:
 
         The downloaded file will be saved to a local folder.
 
-        :param file_path: File path of the source file.
+        :param target_file: `DriveItem` or file path of the desired file.
         :param site: Site instance obtained from \`Get Sharepoint Site\`.
-        :param target_directory: Destination folder of the downloaded file,
+        :param to_path: Destination folder of the downloaded file,
                 defaults to the current directory.
         :param name: New name for the downloaded file, with or without extension.
         :param drive_id: Drive ID if not using default.
-        :return: Boolean indicating if download was successful.
+        :return: Path to the downloaded file.
 
         .. code-block: robotframework
 
@@ -765,10 +817,15 @@ class MSGraph:
                 ...    ${site}
                 ...    /path/to/local/folder
                 ...    Report.pdf
+
+            Download file with object
+                ${download_path}=    Download File From Onedrive
+                ...    ${drive_item}
+                ...    ${site}
+                ...    /path/to/local/folder
+                ...    Report.pdf
         """  # noqa: W605
         self._require_authentication()
         sp_drive = self._get_sharepoint_drive(site, drive_id)
-        file_instance = sp_drive.get_item_by_path(file_path)
-
-        download_path = self._download_file(file_instance, target_directory, name)
-        return download_path
+        file_instance = self._get_file_instance(target_file, sp_drive)
+        return self._download_file(file_instance, to_path, name)
