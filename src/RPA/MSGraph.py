@@ -703,7 +703,7 @@ class MSGraph:
         return sp.get_site(*args)
 
     @keyword
-    def get_sharepoint_list(
+    def get_items_from_sharepoint_list(
         self,
         list_name: str,
         site: sharepoint.Site,
@@ -724,7 +724,7 @@ class MSGraph:
 
             *** Tasks ***
             Get List
-                ${table}=    Get Sharepoint List    My List    ${site}
+                ${table}=    Get Items From Sharepoint List    My List    ${site}
         """  # noqa: W605
         self._require_authentication()
         sp_list = site.get_list_by_name(list_name)

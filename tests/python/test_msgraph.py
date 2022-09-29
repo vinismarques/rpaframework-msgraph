@@ -638,7 +638,7 @@ def test_get_sharepoint_site(
     assert site.object_id == response["id"]
 
 
-def test_get_sharepoint_list(
+def test_get_items_from_sharepoint_list(
     authorized_lib: MSGraph, mocker: MockerFixture, sharepoint_site: Site
 ) -> None:
     list_name = "Documents"
@@ -721,10 +721,10 @@ def test_get_sharepoint_list(
     ]
     _patch_multiple_graph_responses(authorized_lib, mocker, mocked_responses)
 
-    items_list = authorized_lib.get_sharepoint_list(list_name, sharepoint_site)
+    items = authorized_lib.get_items_from_sharepoint_list(list_name, sharepoint_site)
 
-    assert items_list
-    for item in items_list:
+    assert items
+    for item in items:
         assert item["object_id"] in [i["id"] for i in list_items_response["value"]]
 
 
