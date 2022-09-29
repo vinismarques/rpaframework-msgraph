@@ -325,7 +325,7 @@ class MSGraph:
         client_id: Optional[str] = None,
         client_secret: Optional[str] = None,
         redirect_uri: str = None,
-        scope: PermissionBundle = PermissionBundle.BASIC,
+        scopes: list[PermissionBundle] = [PermissionBundle.BASIC],
     ) -> str:
         """Generates an authorization URL which must be opened
         by the user to complete the OAuth flow.
@@ -341,7 +341,7 @@ class MSGraph:
                 client_id, client_secret, redirect_uri=redirect_uri
             )
         return self.client.connection.get_authorization_url(
-            scope.value,
+            [s.value for s in scopes],
             redirect_uri,
         )[0]
 
