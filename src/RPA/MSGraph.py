@@ -702,7 +702,7 @@ class MSGraph:
 
     @keyword
     def get_sharepoint_site(
-        self, *args: tuple[str], resource: Optional[str] = ""
+        self, *args: str, resource: Optional[str] = ""
     ) -> sharepoint.Site:
         """Returns a SharePoint site.
 
