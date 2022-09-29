@@ -193,8 +193,11 @@ class MSGraph:
         folder: Union[drive.Folder, str, None] = None,
     ) -> drive.Folder:
         """Get folder from OneDrive."""
-        if isinstance(folder, drive.Folder):
-            return folder
+        if isinstance(folder, drive.DriveItem):
+            if isinstance(folder, drive.Folder):
+                return folder
+            else:
+                raise TypeError("The folder argument is not of Folder type.")
         elif folder in [None, "/", "\\", "root", "ROOT", ""]:
             return drive_instance.get_root_folder()
         else:
@@ -208,7 +211,7 @@ class MSGraph:
         elif isinstance(target_file, drive.File):
             return drive_instance.get_item(target_file.object_id)
         else:
-            raise ValueError("Target file is not any of the expected types.")
+            raise TypeError("Target file is not any of the expected types.")
 
     def _encode_share_url(self, file_url: str) -> str:
         """Encodes the OneDrive file share link to a format supported
@@ -269,6 +272,7 @@ class MSGraph:
             downloaded_folder = Path() / folder_instance.name
         else:
             downloaded_folder = Path() / to_folder
+        # Method download_contents has no return value.
         folder_instance.download_contents(to_folder=to_folder)
         return downloaded_folder
 
@@ -497,6 +501,45 @@ class MSGraph:
         drive_instance = self._get_drive_instance(resource, drive_id)
         file_instance = self._get_file_instance(target_file, drive_instance)
         return self._download_file(file_instance, to_path, name)
+
+    @keyword
+    def download_folder_from_onedrive(
+        self,
+        target_folder: Union[drive.Folder, str],
+        to_path: Union[Path, str, None] = None,
+        resource: Optional[str] = None,
+        drive_id: Optional[str] = None,
+    ) -> Path:
+        """Downloads a folder from OneDrive with all of it's contents,
+        including subfolders.
+
+        Caution when downloading big folder structures. The downloaded
+        folder will be saved to a local path.
+
+        :param target_folder: `DriveItem` or path of the desired folder.
+        :param to_path: Destination folder where the download will be saved to,
+                defaults to the current directory.
+        :param resource: Name of the resource if not using default.
+        :param drive_id: Drive ID if not using default.
+        :return: Path to the downloaded folder.
+
+        .. code-block: robotframework
+
+            *** Tasks ***
+            Download folder with path
+                ${download_path}=    Download Folder From Onedrive
+                ...    /path/to/onedrive/folder
+                ...    /path/to/local/folder
+
+            Download folder with object
+                ${download_path}=    Download Folder From Onedrive
+                ...    ${drive_item}
+                ...    /path/to/local/folder
+        """
+        self._require_authentication()
+        drive_instance = self._get_drive_instance(resource, drive_id)
+        folder_instance = self._get_folder_instance(drive_instance, target_folder)
+        return self._download_folder(folder_instance, to_path)
 
     @keyword
     def find_onedrive_file(

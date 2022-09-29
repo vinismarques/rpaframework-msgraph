@@ -387,6 +387,76 @@ def test_downloading_file_from_onedrive(
 
 
 @pytest.mark.parametrize(
+    "file_path,responses",
+    [
+        (
+            "/Path/To/File",
+            [
+                {
+                    "createdBy": {
+                        "user": {
+                            "id": "efee1b77-fb3b-4f65-99d6-274c11914d12",
+                            "displayName": "Ryan Gregg",
+                        }
+                    },
+                    "createdDateTime": "2016-03-21T20:01:37Z",
+                    "cTag": '"c:{86EB4C8E-D20D-46B9-AD41-23B8868DDA8A},0"',
+                    "eTag": '"{86EB4C8E-D20D-46B9-AD41-23B8868DDA8A},1"',
+                    "folder": {"childCount": 120},
+                    "id": "01NKDM7HMOJTVYMDOSXFDK2QJDXCDI3WUK",
+                    "lastModifiedBy": {
+                        "user": {
+                            "id": "efee1b77-fb3b-4f65-99d6-274c11914d12",
+                            "displayName": "Ryan Gregg",
+                        }
+                    },
+                    "lastModifiedDateTime": "2016-03-21T20:01:37Z",
+                    "name": "OneDrive",
+                    "root": {},
+                    "size": 157286400,
+                    "webUrl": "https://contoso-my.sharepoint.com/personal/rgregg_contoso_com/Documents",
+                },
+                {
+                    "value": [
+                        {"name": "myfile.jpg", "size": 2048, "file": {}},
+                        {"name": "my sheet(1).xlsx", "size": 197},
+                    ],
+                },
+                "dummy file content".encode(),
+            ],
+        )
+    ],
+)
+def test_downloading_folder_from_onedrive(
+    authorized_lib: MSGraph,
+    mocker: MockerFixture,
+    file_path: str,
+    responses: list[dict],
+) -> None:
+    mocked_responses = [
+        _create_graph_json_response(r) for r in (responses[0], responses[1])
+    ]
+
+    mocked_response = MagicMock()
+    mocked_response.__enter__.return_value.status_code = 200
+    mocked_response.__enter__.return_value.headers = {
+        "Content-Type": "application/octet-stream"
+    }
+    mocked_response.__enter__.return_value.content = responses[2]
+    for _ in responses[1]["value"]:
+        mocked_responses.append(mocked_response)
+
+    _patch_multiple_graph_responses(authorized_lib, mocker, mocked_responses)
+
+    downloaded_folder = authorized_lib.download_folder_from_onedrive(
+        file_path, TEMP_DIR / "downloaded_folder"
+    )
+
+    assert downloaded_folder
+    assert downloaded_folder.exists()
+
+
+@pytest.mark.parametrize(
     "search_string,response",
     [
         (
