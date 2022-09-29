@@ -24,10 +24,7 @@ from robot.api.deco import keyword
 
 DEFAULT_REDIRECT_URI = "https://login.microsoftonline.com/common/oauth2/nativeclient"
 DEFAULT_TOKEN_PATH = Path("/temp")
-
-# Define scopes
 DEFAULT_PROTOCOL = MSGraphProtocol()
-BASIC_SCOPE = DEFAULT_PROTOCOL.get_scopes_for("basic")
 
 
 def import_table():
@@ -41,12 +38,6 @@ def import_table():
 
 Table = import_table()
 DataTable = Table if Table else list[Dict]
-
-
-class PermissionBundle(Enum):
-    """Permission scopes available for authorization."""
-
-    BASIC = BASIC_SCOPE
 
 
 class MSGraphAuthenticationError(Exception):
@@ -320,16 +311,62 @@ class MSGraph:
         return None
 
     @keyword
+    def get_scopes(self, *scopes: str) -> list:
+        # pylint: disable=anomalous-backslash-in-string
+        """Returns the proper scope definitions based on the
+        provided "scope helpers", which are enumerated below.
+        You can pass none to get all scopes. Basic is included
+        in all other scopes. The provided object can be passed
+        to the ``scopes`` parameter when calling
+        \`Generate OAuth Authorization URL\`.
+
+        * ``basic``
+        * ``mailbox``
+        * ``mailbox_shared``
+        * ``message_send``
+        * ``message_send_shared``
+        * ``message_all``
+        * ``message_all_shared``
+        * ``address_book``
+        * ``address_book_shared``
+        * ``address_book_all``
+        * ``address_book_all_shared``
+        * ``calendar``
+        * ``calendar_shared``
+        * ``calendar_all``
+        * ``calendar_shared_all``
+        * ``users``
+        * ``onedrive``
+        * ``onedrive_all``
+        * ``sharepoint``
+        * ``sharepoint_dl``
+        * ``settings_all``
+        * ``tasks``
+        * ``tasks_all``
+        * ``presence``
+        """  # noqa: W605
+        if len(scopes) == 0:
+            return DEFAULT_PROTOCOL.get_scopes_for(None)
+        else:
+            scopes_to_get = [s.lower() for s in scopes]
+            if "basic" not in scopes_to_get:
+                scopes_to_get.append("basic")
+            return DEFAULT_PROTOCOL.get_scopes_for(scopes_to_get)
+
+    @keyword
     def generate_oauth_authorization_url(
         self,
         client_id: Optional[str] = None,
         client_secret: Optional[str] = None,
         redirect_uri: str = None,
-        scopes: list[PermissionBundle] = [PermissionBundle.BASIC],
+        scopes: list = None,
     ) -> str:
+        # pylint: disable=anomalous-backslash-in-string
         """Generates an authorization URL which must be opened
-        by the user to complete the OAuth flow.
-        """
+        by the user to complete the OAuth flow. If no scopes
+        are provided, the default scope is used which is all
+        scopes defined in the \`Get Scopes\` keyword
+        """  # noqa: W605
         if redirect_uri is None:
             redirect_uri = (
                 self.redirect_uri
@@ -340,8 +377,10 @@ class MSGraph:
             self.configure_msgraph_client(
                 client_id, client_secret, redirect_uri=redirect_uri
             )
+        if scopes is None:
+            scopes = self.get_scopes()
         return self.client.connection.get_authorization_url(
-            [s.value for s in scopes],
+            scopes,
             redirect_uri,
         )[0]
 
