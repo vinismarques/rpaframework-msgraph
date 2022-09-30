@@ -1,5 +1,4 @@
 import base64
-from enum import Enum
 import logging
 import importlib
 from typing import Dict, Optional, Union
@@ -431,16 +430,31 @@ class MSGraph:
         .. code-block: robotframework
 
             *** Tasks ***
-            Get the me object
+            Get the me user object
                 ${me}=    Get Me
-                ${full_name}=    Set variable    ${me.full_name}
+                Log    ${me.full_name}
+                Log    ${me.display_name}
+                Log    ${me.given_name}
+                Log    ${me.surname}
+                Log    ${me.full_name}
+                Log    ${me.mail}
+                Log    ${me.business_phones}
+                Log    ${me.mobile_phone}
+                Log    ${me.about_me}
+                Log    ${me.interests}
+                Log    ${me.job_title}
+                Log    ${me.object_id}
+                Log    ${me.user_principal_name}
         """
         self._require_authentication()
         return self.client.get_current_user()
 
     @keyword
     def search_for_users(
-        self, search_string: str, resource: str = USERS_RESOURCE
+        self,
+        search_string: str,
+        search_field: str = "displayName",
+        resource: str = USERS_RESOURCE,
     ) -> list[directory.User]:
         # pylint: disable=anomalous-backslash-in-string
         """Returns a list of user objects from the Active Directory
@@ -448,11 +462,33 @@ class MSGraph:
 
         User objects have additional properties that can be accessed
         with dot-notation, see \`Get Me\` for additional details.
+
+        :param search_string: Text to search for.
+        :param search_field: Where to search. Defaults to display name.
+        :param resource: Name of the resource if not using default.
+
+        .. code-block: robotframework
+
+            *** Tasks ***
+            Search users
+                ${users}=    Search For Users    John
         """  # noqa: W605
         self._require_authentication()
+
+        # Get the session if not already defined, which is necessary because we
+        # need to modify the headers.
+        if self.client.con.session is None:
+            self.client.con.session = self.client.con.get_session(load_token=True)
+
+        # It is necessary to pass a specific header to use $search, as the error
+        # message instructs: "Request with $search query parameter only works through
+        # MSGraph with a special request header: 'ConsistencyLevel: eventual'".
         active_directory = self.client.directory(resource)
-        query = active_directory.new_query().search(search_string)
-        return active_directory.get_users(query=query)
+        query = active_directory.new_query().search(f"{search_field}:{search_string}")
+        self.client.con.session.headers["ConsistencyLevel"] = "eventual"
+        users = active_directory.get_users(query=query)
+        del self.client.con.session.headers["ConsistencyLevel"]
+        return users
 
     @keyword
     def list_files_in_onedrive_folder(
