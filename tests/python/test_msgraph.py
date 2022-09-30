@@ -5,7 +5,7 @@ from urllib.parse import parse_qs, urlencode, urlparse
 from mock import MagicMock, ANY
 import pytest
 from pytest_mock import MockerFixture
-from RPA.MSGraph import MSGraph, DEFAULT_REDIRECT_URI, PermissionBundle
+from RPA.MSGraph import MSGraph, DEFAULT_REDIRECT_URI
 from O365.sharepoint import Site
 from pathlib import Path
 import re
@@ -13,6 +13,7 @@ import re
 RESOURCE_DIR = Path(__file__).parent / "resources"
 TEMP_DIR = Path(__file__).parent / "temp"
 CONFIG_FILE = RESOURCE_DIR / "msgraph"
+SCOPES = MSGraph().get_scopes()
 
 DEFAULT_STATE = "123"
 MOCK_CLIENT_ID = "my-client-id"
@@ -78,7 +79,7 @@ def _patch_token_response(
         mocker,
         {
             "token_type": "Bearer",
-            "scope": "%20F".join(PermissionBundle.BASIC.value),
+            "scope": "%20F".join(SCOPES),
             "expires_in": 3600,
             "access_token": MOCK_ACCESS_TOKEN.format(iteration),
             "refresh_token": MOCK_REFRESH_TOKEN.format(iteration),
@@ -125,7 +126,7 @@ def test_generating_auth_url(init_auth: str) -> None:
         "response_type": "code",
         "client_id": MOCK_CLIENT_ID,
         "redirect_uri": DEFAULT_REDIRECT_URI,
-        "scope": " ".join(PermissionBundle.BASIC.value),
+        "scope": " ".join(SCOPES),
     }
     encoded_params = urlencode(params).replace(r"+", r"\+")
     pattern = re.compile(
@@ -160,8 +161,8 @@ def test_refreshing_token(configured_lib: MSGraph, mocker: MockerFixture) -> Non
         "access_token": MOCK_ACCESS_TOKEN.format(2),
         "refresh_token": MOCK_REFRESH_TOKEN.format(2),
         "expires_at": time.time() + 3600,
-        "scope": "%20F".join(PermissionBundle.BASIC.value),
-        "scopes": PermissionBundle.BASIC.value,
+        "scope": "%20F".join(SCOPES),
+        "scopes": SCOPES,
     }
 
     config = {"return_value.refresh_token.return_value": return_token}
